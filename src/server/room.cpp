@@ -2046,6 +2046,7 @@ void Room::drawCards(ServerPlayer *player, int n){
         }
     }else
         broadcastInvoke("drawNCards", draw_str, player);
+        thread->trigger(CardDraw, player);
 }
 
 void Room::throwCard(const Card *card){
@@ -2145,6 +2146,8 @@ void Room::moveCardTo(const Card *card, ServerPlayer *to, Player::Place place, b
 
     if(from)
         thread->trigger(CardLostDone, from);
+    if(move.to)
+        thread->trigger(CardGot, move.to);
 }
 
 void Room::doMove(const CardMoveStruct &move, const QSet<ServerPlayer *> &scope){
@@ -2181,8 +2184,6 @@ void Room::doMove(const CardMoveStruct &move, const QSet<ServerPlayer *> &scope)
 
     if(move.to){
         move.to->addCard(card, move.to_place);
-
-        thread->trigger(CardGot, move.to);
 
         if(move.to_place == Player::Special){
             QString pile_name = move.to->getPileName(move.card_id);

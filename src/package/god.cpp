@@ -1164,7 +1164,7 @@ public:
         const Card *card = to_select->getFilteredCard();
         int n = qMax(1, Self->getHp());
 
-        if(Self->getMark("Rulong")==1)
+        if(Self->getMark("Shenwei")==1)
             n=1;
 
         if(selected.length() >= n)
@@ -1207,7 +1207,7 @@ public:
     virtual const Card *viewAs(const QList<CardItem *> &cards) const{
         int n = qMax(1, Self->getHp());
 
-        if(Self->getMark("Rulong")==1)
+        if(Self->getMark("Shenwei")==1)
             n=1;
 
         if(cards.length() != n)

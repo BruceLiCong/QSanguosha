@@ -7,34 +7,33 @@
 class SuperJuejing: public TriggerSkill{
 public:
     SuperJuejing():TriggerSkill("super_juejing"){
-        events   <<GameStart << CardLost << PhaseChange<<CardGot ;
+        events   <<GameStart << CardLost << PhaseChange <<CardLostDone <<CardGot <<CardDraw;
         frequency = Compulsory;
     }
 
+    virtual int getPriority() const{
+        return 2;
+    }
     virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &) const{
 
         if(event == GameStart){
-            player->setMark("SuperMan", 1);
-            Self->setMark("SuperMan", 1);
+            player->getRoom()->setPlayerMark(player, "Shenwei", 1);
             return false;
         }
         Room *room = player->getRoom();
-        if(player->getPhase() == Player::Draw){
-            QVariant draw_num = 0;
-            player->getRoom()->getThread()->trigger(DrawNCards, player, draw_num);
-            player->drawCards(0, false);
-
-            return true;
+        if(event == PhaseChange){
+            if(player->getPhase() == Player::Draw)
+                return true;
+            return false;
         }
 
 
-
-        if(player->getHandcardNum()<4){
+        else if(player->getHandcardNum()<4){
                     player->getRoom()->playSkillEffect(objectName());
                     player->drawCards(4-player->getHandcardNum());
         }
         else if(player->getHandcardNum()>4){
-                    room->askForDiscard(player, objectName(), player->getHandcardNum() - 4);
+                    room->askForDiscard(player, objectName(), 1);
         }
 
         return false;

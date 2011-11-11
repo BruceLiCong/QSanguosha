@@ -2182,6 +2182,8 @@ void Room::doMove(const CardMoveStruct &move, const QSet<ServerPlayer *> &scope)
     if(move.to){
         move.to->addCard(card, move.to_place);
 
+        thread->trigger(CardGot, move.to);
+
         if(move.to_place == Player::Special){
             QString pile_name = move.to->getPileName(move.card_id);
             Q_ASSERT(!pile_name.isEmpty());

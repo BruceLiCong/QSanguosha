@@ -7,18 +7,18 @@
 class SuperJuejing: public TriggerSkill{
 public:
     SuperJuejing():TriggerSkill("super_juejing"){
-        events   <<GameStart << CardLost << PhaseChange ;
+        events   <<GameStart << CardLost << PhaseChange<<CardGot ;
         frequency = Compulsory;
     }
 
-    virtual bool trigger(TriggerEvent , ServerPlayer *player, QVariant &) const{
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &) const{
 
         if(event == GameStart){
             player->setMark("SuperMan", 1);
             Self->setMark("SuperMan", 1);
             return false;
         }
-
+        Room *room = player->getRoom();
         if(player->getPhase() == Player::Draw){
             QVariant draw_num = 0;
             player->getRoom()->getThread()->trigger(DrawNCards, player, draw_num);
@@ -29,10 +29,14 @@ public:
 
 
 
-        else if(player->getHandcardNum()<4){
+        if(player->getHandcardNum()<4){
                     player->getRoom()->playSkillEffect(objectName());
                     player->drawCards(4-player->getHandcardNum());
-                }
+        }
+        else if(player->getHandcardNum()>4){
+                    room->askForDiscard(player, objectName(), player->getHandcardNum() - 4);
+        }
+
         return false;
     }
 };
@@ -77,7 +81,7 @@ GhostPackage::GhostPackage()
 {
     General *yixueshenzhaoyun = new General(this, "yixueshenzhaoyun", "god", 1);
     yixueshenzhaoyun->addSkill(new SuperJuejing);
-    yixueshenzhaoyun->addSkill(longhun);
+    yixueshenzhaoyun->addSkill("longhun");
     yixueshenzhaoyun->addSkill(new Duojian);
 }
 

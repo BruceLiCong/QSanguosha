@@ -395,6 +395,8 @@ bool ServerPlayer::hasNullification() const{
         }
     }else if(hasSkill("longhun")){
         int n = qMax(1, getHp());
+        if(hasSkill("super_juejing"))
+            n=1;
         int count = 0;
         foreach(const Card *card, handcards + getEquips()){
             if(card->objectName() == "nullification")

@@ -7,7 +7,7 @@
 class SuperJuejing: public TriggerSkill{
 public:
     SuperJuejing():TriggerSkill("super_juejing"){
-        events   <<GameStart << CardLost << PhaseChange <<CardLostDone <<CardGot <<CardDraw;
+        events   <<GameStart << CardLost << PhaseChange <<CardLostDone <<CardGot <<CardDrawn;
         frequency = Compulsory;
     }
 

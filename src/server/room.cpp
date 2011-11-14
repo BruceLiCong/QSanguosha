@@ -2046,7 +2046,7 @@ void Room::drawCards(ServerPlayer *player, int n){
         }
     }else
         broadcastInvoke("drawNCards", draw_str, player);
-        thread->trigger(CardDraw, player);
+        thread->trigger(CardDrawn, player);
 }
 
 void Room::throwCard(const Card *card){

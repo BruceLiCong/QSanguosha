@@ -164,7 +164,7 @@ enum TriggerEvent{
     CardLost,
     CardLostDone,
     CardGot,
-    CardDraw,
+    CardDrawn,
 
     CardEffect,
     CardEffected,

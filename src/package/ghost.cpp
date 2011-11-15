@@ -18,6 +18,8 @@ public:
 
         if(event == GameStart){
             player->getRoom()->setPlayerMark(player, "Shenwei", 1);
+            if(player->getMaxHP() < 1)
+                player->getRoom()->setPlayerProperty(player, "maxhp", 1);
             return false;
         }
         Room *room = player->getRoom();

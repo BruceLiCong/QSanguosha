@@ -1,6 +1,6 @@
 return{
 	["ghost"] = "鬼包",
-	["yixueshenzhaoyun"] = "一血神赵云",
+	["yixueshenzhaoyun"] = "初版神赵云",
 	["super_juejing"] = "绝境",
 	[":super_juejing"] = "锁定技 摸牌阶段，你不摸牌；弃牌阶段，手牌上限永远为4；其它阶段，每当你手牌数小于4，立即将手牌数补至4",
 	["super_longhun"] = "龙魂",

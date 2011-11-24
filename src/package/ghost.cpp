@@ -17,7 +17,7 @@ public:
     virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &) const{
 
         if(event == GameStart){
-            player->getRoom()->setPlayerMark(player, "Shenwei", 1);
+            player->getRoom()->setPlayerMark(player, "Longwei", 1);
             if(player->getMaxHP() < 1)
                 player->getRoom()->setPlayerProperty(player, "maxhp", 1);
             return false;
@@ -77,6 +77,76 @@ public:
         return false;
     }
 };
+
+class Longyin: public FilterSkill{
+public:
+    Longyin():FilterSkill("longyin"){
+
+    }
+
+    virtual bool viewFilter(const CardItem *to_select) const{
+        return to_select->getCard()->inherits("Slash") && to_select->getCard()->isBlack();
+    }
+
+    virtual const Card *viewAs(CardItem *card_item) const{
+        const Card *card = card_item->getCard();
+        WushenSlash *slash =new WushenSlash(card->getSuit(), card->getNumber());
+        slash->addSubcard(card_item->getCard()->getId());
+        slash->setSkillName(objectName());
+
+        return slash;
+    }
+};
+
+class Sheji: public SlashBuffSkill{
+public:
+    Sheji():SlashBuffSkill("sheji"){
+        frequency = Compulsory;
+    }
+
+    virtual bool buff(const SlashEffectStruct &effect) const{
+        ServerPlayer *player = effect.from;
+        Room *room = player->getRoom();
+        if(player->getPhase() != Player::Play)
+            return false;
+
+        if(effect.to->inMyAttackRange(player)){
+            room->playSkillEffect(objectName());
+            room->slashResult(effect, NULL);
+
+                return true;
+        }
+
+        return false;
+    }
+};
+
+class Wumo: public TriggerSkill{
+public:
+    Wumo():TriggerSkill("wumo"){
+        events << CardUsed << CardResponsed;
+
+        frequency = Frequent;
+    }
+
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
+        const Card *card = NULL;
+        if(event == CardUsed){
+            CardUseStruct use = data.value<CardUseStruct>();
+            card = use.card;
+        }
+        if(card == NULL)
+            return false;
+
+        if(card->inherits("Slash") && player->getPhase() == Player::Play){
+            if(player->askForSkillInvoke(objectName(), data))
+                player->drawCards(1);
+        }
+
+        return false;
+    }
+};
+
 GhostPackage::GhostPackage()
     :Package("ghost")
 {
@@ -84,6 +154,18 @@ GhostPackage::GhostPackage()
     yixueshenzhaoyun->addSkill(new SuperJuejing);
     yixueshenzhaoyun->addSkill("longhun");
     yixueshenzhaoyun->addSkill(new Duojian);
+
+    General *guizhangfei = new General(this, "guizhangfei", "shu", 4);
+    guizhangfei->addSkill(new Longyin);
+    guizhangfei->addSkill(new Skill("huxiao", Skill::Compulsory));
+
+    General *guilvbu = new General(this, "guilvbu", "qun", 4);
+    guilvbu->addSkill(new Sheji);
+    guilvbu->addSkill(new Skill("juelu", Skill::Compulsory));
+
+    General *guiguanyu = new General(this, "guiguanyu", "qun", 4);
+    guiguanyu->addSkill(new Wumo);
+//    guiguanyu->addSkill(new Skill("juelu", Skill::Compulsory));
 }
 
 ADD_PACKAGE(Ghost)

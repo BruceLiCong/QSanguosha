@@ -134,7 +134,11 @@ public:
         if(event == CardUsed){
             CardUseStruct use = data.value<CardUseStruct>();
             card = use.card;
+        }else if(event == CardEffected){
+            CardEffectStruct effect = data.value<CardEffectStruct>();
+            card = effect.card;
         }
+
         if(card == NULL)
             return false;
 
@@ -142,6 +146,25 @@ public:
             if(player->askForSkillInvoke(objectName(), data))
                 player->drawCards(1);
         }
+
+        return false;
+    }
+};
+
+class Tuodao: public TriggerSkill{
+public:
+    Tuodao():TriggerSkill("tuodao"){
+        events << SlashMissed;
+    }
+
+    virtual bool triggerable(const ServerPlayer *) const{
+        return true;
+    }
+    virtual bool trigger(TriggerEvent, ServerPlayer *player, QVariant &data) const{
+        SlashEffectStruct effect = data.value<SlashEffectStruct>();
+
+        if(effect.to->hasSkill("tuodao") && effect.to->getPhase() == Player::NotActive)
+            effect.to->getRoom()->askForUseCard(effect.to, "slash", "@askforslash");
 
         return false;
     }
@@ -163,9 +186,9 @@ GhostPackage::GhostPackage()
     guilvbu->addSkill(new Sheji);
     guilvbu->addSkill(new Skill("juelu", Skill::Compulsory));
 
-    General *guiguanyu = new General(this, "guiguanyu", "qun", 4);
+    General *guiguanyu = new General(this, "guiguanyu", "shu", 4);
     guiguanyu->addSkill(new Wumo);
-//    guiguanyu->addSkill(new Skill("juelu", Skill::Compulsory));
+    guiguanyu->addSkill(new Tuodao);
 }
 
 ADD_PACKAGE(Ghost)

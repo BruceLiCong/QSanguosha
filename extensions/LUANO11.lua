@@ -23,6 +23,7 @@ enabled_at_response=function(self,player,pattern)  --×¢ÒâÕâ¸ö²ÎÊı£¬Ö®Ç°×ßÁË²»ÉÙÍ
    return not player:isKongcheng()   and( pattern=="slash" or pattern=="jink" or pattern=="peach") --·Ç¿Õ³ÇÇÒÒªÇóÉ±ÉÁÌÒ×ÓÊ±ÄÜÓÃ 
 --ÕâÀï¿ÉÒÔÀ©Õ¹ µ«ÊÇ²»ÄÜÊÇÎŞĞ¸¿É»÷¡£¡£¡£
 end
+}
 luahujia=sgs.CreateTriggerSkill{
         name="luahujia$",
         events={sgs.CardAsked},        

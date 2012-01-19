@@ -78,25 +78,7 @@ public:
     }
 };
 
-class Longyin: public FilterSkill{
-public:
-    Longyin():FilterSkill("longyin"){
 
-    }
-
-    virtual bool viewFilter(const CardItem *to_select) const{
-        return to_select->getCard()->inherits("Slash") && to_select->getCard()->isBlack();
-    }
-
-    virtual const Card *viewAs(CardItem *card_item) const{
-        const Card *card = card_item->getCard();
-        WushenSlash *slash =new WushenSlash(card->getSuit(), card->getNumber());
-        slash->addSubcard(card_item->getCard()->getId());
-        slash->setSkillName(objectName());
-
-        return slash;
-    }
-};
 
 class Sheji: public SlashBuffSkill{
 public:
@@ -179,7 +161,7 @@ GhostPackage::GhostPackage()
     yixueshenzhaoyun->addSkill(new Duojian);
 
     General *guizhangfei = new General(this, "guizhangfei", "shu", 4);
-    guizhangfei->addSkill(new Longyin);
+    guizhangfei->addSkill(new Skill("longyin", Skill::Compulsory));
     guizhangfei->addSkill(new Skill("huxiao", Skill::Compulsory));
 
     General *guilvbu = new General(this, "guilvbu", "qun", 4);

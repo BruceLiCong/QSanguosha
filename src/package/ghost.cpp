@@ -152,6 +152,33 @@ public:
     }
 };
 
+class Xiaoshou:public MasochismSkill{
+public:
+    Xiaoshou():MasochismSkill("xiaoshou"){
+
+    }
+
+    virtual void onDamaged(ServerPlayer *guihuaxiong, const DamageStruct &damage) const{
+        ServerPlayer *from = damage.from;
+        Room *room = guihuaxiong->getRoom();
+        QVariant data = QVariant::fromValue(from);
+        if(from && from->hasEquip() && room->askForSkillInvoke(guihuaxiong, "xiaoshou", data)){
+            int card_id = room->askForCardChosen(guihuaxiong, from, "e", "xiaoshou");
+            const Card *card = Sanguosha->getCard(card_id);
+            room->obtainCard(guihuaxiong, card_id);
+
+            QList<ServerPlayer *> targets = room->getAllPlayers();
+            ServerPlayer *target = room->askForPlayerChosen(guihuaxiong, targets, "xiaoshou");
+            if(target != guihuaxiong)
+                room->moveCardTo(card, target, Player::Hand, false);
+            QString choice = room->askForChoice(guihuaxiong, "xiaoshou", "obtain+equip");
+            if(choice == "equip")
+                room->moveCardTo(card, target, Player::Equip, true);
+            room->playSkillEffect(objectName());
+        }
+    }
+};
+
 GhostPackage::GhostPackage()
     :Package("ghost")
 {
@@ -171,6 +198,9 @@ GhostPackage::GhostPackage()
     General *guiguanyu = new General(this, "guiguanyu", "shu", 4);
     guiguanyu->addSkill(new Wumo);
     guiguanyu->addSkill(new Tuodao);
+
+    General *guihuaxiong = new General(this, "guihuaxiong", "qun", 4);
+    guihuaxiong->addSkill(new Xiaoshou);
 }
 
 ADD_PACKAGE(Ghost)

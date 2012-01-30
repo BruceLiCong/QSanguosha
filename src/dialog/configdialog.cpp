@@ -2,16 +2,6 @@
 #include "ui_configdialog.h"
 #include "settings.h"
 
-#ifdef AUDIO_SUPPORT
-#ifdef  Q_OS_WIN32
-    #include "irrKlang.h"
-    extern irrklang::ISoundEngine *SoundEngine;
-#else
-    #include <phonon/AudioOutput>
-    extern Phonon::AudioOutput *SoundOutput;
-#endif
-#endif
-
 #include <QFileDialog>
 #include <QDesktopServices>
 #include <QFontDialog>
@@ -28,7 +18,7 @@ ConfigDialog::ConfigDialog(QWidget *parent) :
     if(!bg_path.startsWith(":"))
         ui->bgPathLineEdit->setText(bg_path);
 
-    ui->bgMusicPathLineEdit->setText(Config.value("BackgroundMusic").toString());
+    ui->bgMusicPathLineEdit->setText(Config.value("BackgroundMusic", "audio/system/background.ogg").toString());
 
     ui->enableEffectCheckBox->setChecked(Config.EnableEffects);
     ui->enableLastWordCheckBox->setChecked(Config.EnableLastWord);
@@ -37,7 +27,8 @@ ConfigDialog::ConfigDialog(QWidget *parent) :
     ui->circularViewCheckBox->setChecked(Config.value("CircularView", false).toBool());
     ui->noIndicatorCheckBox->setChecked(Config.value("NoIndicator", false).toBool());
 
-    ui->volumeSlider->setValue(100 * Config.Volume);
+    ui->bgmVolumeSlider->setValue(100 * Config.BGMVolume);
+    ui->effectVolumeSlider->setValue(100 * Config.EffectVolume);
 
     // tab 2
     ui->nullificationSpinBox->setValue(Config.NullificationCountDown);
@@ -96,7 +87,7 @@ void ConfigDialog::on_resetBgButton_clicked()
 {
     ui->bgPathLineEdit->clear();
 
-    QString filename = "backdrop/chibi.jpg";
+    QString filename = "backdrop/new-version.jpg";
     Config.BackgroundBrush = filename;
     Config.setValue("BackgroundBrush", filename);
 
@@ -109,19 +100,12 @@ void ConfigDialog::saveConfig()
     Config.NullificationCountDown = count_down;
     Config.setValue("NullificationCountDown", count_down);
 
-    float volume = ui->volumeSlider->value() / 100.0;
-    Config.Volume = volume;
-    Config.setValue("Volume", volume);
-
-#ifdef AUDIO_SUPPORT
-#ifdef  Q_OS_WIN32
-    if(SoundEngine)
-        SoundEngine->setSoundVolume(Config.Volume);
-#else
-    if(SoundOutput)
-        SoundOutput->setVolume(Config.Volume);
-#endif
-#endif
+    float volume = ui->bgmVolumeSlider->value() / 100.0;
+    Config.BGMVolume = volume;
+    Config.setValue("BGMVolume", volume);
+    volume = ui->effectVolumeSlider->value() / 100.0;
+    Config.EffectVolume = volume;
+    Config.setValue("EffectVolume", volume);
 
     bool enabled = ui->enableEffectCheckBox->isChecked();
     Config.EnableEffects = enabled;
@@ -158,7 +142,7 @@ void ConfigDialog::on_browseBgMusicButton_clicked()
     QString filename = QFileDialog::getOpenFileName(this,
                                                     tr("Select a background music"),
                                                     location,
-                                                    tr("Audio files (*.wav *.mp3)"));
+                                                    tr("Audio files (*.wav *.mp3 *.ogg)"));
     if(!filename.isEmpty()){
         ui->bgMusicPathLineEdit->setText(filename);
         Config.setValue("BackgroundMusic", filename);
@@ -167,7 +151,7 @@ void ConfigDialog::on_browseBgMusicButton_clicked()
 
 void ConfigDialog::on_resetBgMusicButton_clicked()
 {
-    QString default_music = "audio/system/background.mp3";
+    QString default_music = "audio/system/background.ogg";
     Config.setValue("BackgroundMusic", default_music);
     ui->bgMusicPathLineEdit->setText(default_music);
 }

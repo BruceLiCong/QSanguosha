@@ -21,8 +21,14 @@ public:
         if(event == CardFinished){
             CardUseStruct card_use = data.value<CardUseStruct>();
             card = card_use.card;
-        }else if(event == CardResponsed)
+
+            if(card == player->tag["MoonSpearSlash"].value<CardStar>()){
+                card = NULL;
+            }
+        }else if(event == CardResponsed){
             card = data.value<CardStar>();
+            player->tag["MoonSpearSlash"] = data;
+        }
 
         if(card == NULL || !card->isBlack())
             return false;
@@ -146,7 +152,7 @@ void SuperFanjianCard::onEffect(const CardEffectStruct &effect) const{
 class SuperJuejing: public TriggerSkill{
 public:
     SuperJuejing():TriggerSkill("super_juejing"){
-        events   <<GameStart << CardLost << PhaseChange <<CardLostDone <<CardGot <<CardDrawn <<AGTaken ;
+        events   <<GameStart << CardLost << PhaseChange <<CardLostDone <<CardGot <<CardDrawnDone <<CardGotDone ;
         frequency = Compulsory;
     }
 

@@ -5,6 +5,7 @@
 #include "carditem.h"
 #include "engine.h"
 #include "ai.h"
+#include "general.h"
 
 // skill cards
 
@@ -59,7 +60,7 @@ HuangtianCard::HuangtianCard(){
 
 void HuangtianCard::use(Room *room, ServerPlayer *, const QList<ServerPlayer *> &targets) const{
     ServerPlayer *zhangjiao = targets.first();
-    if(zhangjiao->hasSkill("huangtian")){
+    if(zhangjiao->hasLordSkill("huangtian")){
         zhangjiao->obtainCard(this);
         room->setEmotion(zhangjiao, "good");
     }
@@ -886,7 +887,7 @@ const Card *GuhuoCard::validate(const CardUseStruct *card_use) const{
         const Card *card = Sanguosha->getCard(subcards.first());
         Card *use_card = Sanguosha->cloneCard(user_string, card->getSuit(), card->getNumber());
         use_card->setSkillName("guhuo");
-        use_card->addSubcard(this);
+        room->throwCard(this);
 
         return use_card;
     }else
@@ -915,7 +916,7 @@ const Card *GuhuoCard::validateInResposing(ServerPlayer *yuji, bool *continuable
         const Card *card = Sanguosha->getCard(subcards.first());
         Card *use_card = Sanguosha->cloneCard(to_guhuo, card->getSuit(), card->getNumber());
         use_card->setSkillName("guhuo");
-        use_card->addSubcard(this);
+        room->throwCard(this);
 
         return use_card;
     }else

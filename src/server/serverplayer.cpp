@@ -5,6 +5,7 @@
 #include "ai.h"
 #include "settings.h"
 #include "recorder.h"
+#include "banpair.h"
 
 ServerPlayer::ServerPlayer(Room *room)
     : Player(room), socket(NULL), room(room),
@@ -25,9 +26,13 @@ void ServerPlayer::playCardEffect(const Card *card){
         QString skill_name = card->getSkillName();
         const Skill *skill = Sanguosha->getSkill(skill_name);
         int index = -1;
-        if(skill)
+        if(skill){
+            if(skill->useCardSoundEffect()){
+                room->playCardEffect(card->objectName(), getGeneral()->isMale());
+                return;
+            }
             index = skill->getEffectIndex(this, card);
-
+        }
         room->playSkillEffect(skill_name, index);
     }else
         room->playCardEffect(card->objectName(), getGeneral()->isMale());
@@ -208,20 +213,52 @@ QStringList ServerPlayer::getSelected() const{
     return selected;
 }
 
-#include "banpairdialog.h"
+QString ServerPlayer::findReasonable(const QStringList &generals, bool no_unreasonable){
 
-QString ServerPlayer::findReasonable(const QStringList &generals){
-    if(Config.Enable2ndGeneral){
-        foreach(QString name, generals){
+    foreach(QString name, generals){
+        if(Config.Enable2ndGeneral){
             if(getGeneral()){
-                if(!BanPair::isBanned(getGeneralName(), name))
-                    return name;
+                if(BanPair::isBanned(getGeneralName(), name))
+                    continue;
             }else{
-                if(!BanPair::isBanned(name))
-                    return name;
+                if(BanPair::isBanned(name))
+                    continue;
+            }
+
+            if(Config.EnableHegemony)
+            {
+                if(getGeneral())
+                    if(getGeneral()->getKingdom()
+                            != Sanguosha->getGeneral(name)->getKingdom())
+                        continue;
             }
         }
+        if(Config.EnableBasara)
+        {
+            QStringList ban_list = Config.value("Banlist/Basara").toStringList();
+
+            if(ban_list.contains(name))continue;
+        }
+        if(Config.GameMode == "zombie_mode")
+        {
+            QStringList ban_list = Config.value("Banlist/Zombie").toStringList();
+
+            if(ban_list.contains(name))continue;
+        }
+        if((Config.GameMode.endsWith("p") ||
+            Config.GameMode.endsWith("pd")))
+        {
+            QStringList ban_list = Config.value("Banlist/Roles").toStringList();
+
+            if(ban_list.contains(name))continue;
+        }
+
+        return name;
     }
+
+
+    if(no_unreasonable)
+        return NULL;
 
     return generals.first();
 }
@@ -475,6 +512,8 @@ void ServerPlayer::turnOver(){
     log.from = this;
     log.arg = faceUp() ? "face_up" : "face_down";
     room->sendLog(log);
+
+    room->getThread()->trigger(TurnedOver, this);
 }
 
 void ServerPlayer::play(){
@@ -607,7 +646,10 @@ int ServerPlayer::getGeneralMaxHP() const{
         int first = getGeneral()->getMaxHp();
         int second = getGeneral2()->getMaxHp();
 
-        switch(Config.MaxHpScheme){
+        int plan = Config.MaxHpScheme;
+        if(Config.GameMode.contains("_mini_"))plan = 1;
+
+        switch(plan){
         case 2: max_hp = (first + second)/2; break;
         case 1: max_hp = qMin(first, second); break;
         case 0:
@@ -648,6 +690,9 @@ void ServerPlayer::introduceTo(ServerPlayer *player){
         player->invoke("addPlayer", introduce_str);
     else
         room->broadcastInvoke("addPlayer", introduce_str, this);
+
+    if(isReady())
+        room->broadcastProperty(this, "ready");
 }
 
 void ServerPlayer::marshal(ServerPlayer *player) const{
@@ -737,6 +782,15 @@ void ServerPlayer::addToPile(const QString &pile_name, int card_id, bool open){
     piles[pile_name] << card_id;
 
     room->moveCardTo(Sanguosha->getCard(card_id), this, Player::Special, open);
+}
+
+void ServerPlayer::gainAnExtraTurn(){
+    ServerPlayer *current = room->getCurrent();
+
+    room->setCurrent(this);
+    room->removeTag("Zhichi");
+    room->getThread()->trigger(TurnStart, this);
+    room->setCurrent(current);
 }
 
 void ServerPlayer::copyFrom(ServerPlayer* sp)

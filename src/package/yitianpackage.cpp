@@ -62,21 +62,24 @@ bool ChengxiangCard::targetsFeasible(const QList<const Player *> &targets, const
 }
 
 void ChengxiangCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
-    QList<ServerPlayer *> to = targets;
-
-    if(to.isEmpty())
+    if(targets.isEmpty()){
+        QList<ServerPlayer *> to;
         to << source;
-
-    return SkillCard::use(room, source, to);
+        SkillCard::use(room, source, to);
+    }else
+        SkillCard::use(room, source, targets);
 }
 
 void ChengxiangCard::onEffect(const CardEffectStruct &effect) const{
     Room *room = effect.to->getRoom();
 
-    RecoverStruct recover;
-    recover.card = this;
-    recover.who = effect.from;
-    room->recover(effect.to, recover);
+    if(effect.to->isWounded()){
+        RecoverStruct recover;
+        recover.card = this;
+        recover.who = effect.from;
+        room->recover(effect.to, recover);
+    }else
+        effect.to->drawCards(2);
 }
 
 class ChengxiangViewAsSkill: public ViewAsSkill{
@@ -156,6 +159,10 @@ public:
 
     virtual bool triggerable(const ServerPlayer *target) const{
         return PhaseChangeSkill::triggerable(target) && target->getPhase() == Player::Discard;
+    }
+
+    virtual int getPriority() const{
+        return 3;
     }
 
     virtual bool onPhaseChange(ServerPlayer *) const{
@@ -276,7 +283,7 @@ public:
     }
 
     virtual bool isEnabledAtPlay(const Player *player) const{
-        return ! player->hasUsed("JuejiCard");
+        return false;
     }
 
     virtual bool viewFilter(const CardItem *to_select) const{
@@ -471,7 +478,7 @@ void LianliSlashCard::onEffect(const CardEffectStruct &effect) const{
     if(xiahoujuan){
         const Card *slash = room->askForCard(xiahoujuan, "slash", "@lianli-slash");
         if(slash){
-            zhangfei->invoke("increaseSlashCount");
+            zhangfei->invoke("addHistory", "Slash");
             room->cardEffect(slash, zhangfei, effect.to);
             return;
         }
@@ -953,17 +960,35 @@ public:
         frequency = Compulsory;
     }
 
+    virtual QString getDefaultChoice(ServerPlayer *player) const{
+        int males = 0;
+        foreach(ServerPlayer *player, player->getRoom()->getAlivePlayers()){
+            if(player->getGender() == General::Male)
+                males ++;
+        }
+
+        if(males > (player->aliveCount() - males))
+            return "female";
+        else
+            return "male";
+    }
+
     virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
         Room *room = player->getRoom();
         if(event == GameStart){
+            if(player->getGeneral2Name().startsWith("luboyan")){
+                room->setPlayerProperty(player, "general2", player->getGeneralName());
+                room->setPlayerProperty(player, "general", "luboyan");
+            }
+
             QString gender = room->askForChoice(player, objectName(), "male+female");
             bool is_male = player->getGeneral()->isMale();
             if(gender == "female"){
                 if(is_male)
-                    room->transfigure(player, "luboyanf", false, false);
+                    room->transfigure(player, "luboyanf", false, false, "luboyan");
             }else if(gender == "male"){
                 if(!is_male)
-                    room->transfigure(player, "luboyan", false, false);
+                    room->transfigure(player, "luboyan", false, false, "luboyanf");
             }
 
             LogMessage log;
@@ -982,7 +1007,8 @@ public:
                 QString new_general = "luboyan";
                 if(player->getGeneral()->isMale())
                     new_general.append("f");
-                room->transfigure(player, new_general, false, false);
+                QString old_general = new_general.endsWith("f")?"luboyan":"luboyanf";
+                room->transfigure(player, new_general, false, false, old_general);
             }
         }else if(event == Predamaged){
             DamageStruct damage = data.value<DamageStruct>();
@@ -1279,8 +1305,8 @@ void XunzhiCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer 
     }
 
     QString general = room->askForGeneral(source, shu_generals);
-
-    room->transfigure(source, general, false);
+    source->tag["newgeneral"] = general;
+    room->transfigure(source, general, false, false, "jiangboyue");
     room->acquireSkill(source, "xunzhi", false);
     source->setFlags("xunzhi");
 }
@@ -1289,10 +1315,6 @@ class XunzhiViewAsSkill: public ZeroCardViewAsSkill{
 public:
     XunzhiViewAsSkill():ZeroCardViewAsSkill("#xunzhi"){
 
-    }
-
-    virtual bool isEnabledAtPlay(const Player *player) const{
-        return player->getGeneral()->hasSkill("xunzhi");
     }
 
     virtual const Card *viewAs() const{
@@ -1311,7 +1333,7 @@ public:
            target->hasFlag("xunzhi"))
         {
             Room *room = target->getRoom();
-            room->transfigure(target, parent()->objectName(), false);
+            room->transfigure(target, parent()->objectName(), false, false, target->tag.value("newgeneral", "").toString());
             room->killPlayer(target);
         }
 
@@ -1921,8 +1943,8 @@ YitianPackage::YitianPackage()
     yitianjian->addSkill(new Zhenwei);
     yitianjian->addSkill(new Yitian);
 
-    General *sp_pangde = new General(this, "sp_pangde", "wei");
-    sp_pangde->addSkill(new Taichen);
+    General *panglingming = new General(this, "panglingming", "wei");
+    panglingming->addSkill(new Taichen);
 
     skills << new LianliSlashViewAsSkill << new YisheAsk;
 

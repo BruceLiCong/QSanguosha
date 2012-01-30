@@ -293,10 +293,10 @@ bool Player::hasLordSkill(const QString &skill_name) const{
         return true;
 
     QString mode = getGameMode();
-    if(mode == "06_3v3" || mode == "02_1v1" || mode == "02p")
+    if(mode == "06_3v3" || mode == "02_1v1")
         return false;
 
-    if(isLord())
+    if(isLord() || ServerInfo.EnableHegemony)
         return hasInnateSkill(skill_name);
 
     if(hasSkill("weidi")){
@@ -424,7 +424,7 @@ bool Player::hasWeapon(const QString &weapon_name) const{
 }
 
 bool Player::hasArmorEffect(const QString &armor_name) const{
-    return armor && getMark("qinggang") == 0 && getMark("wuqian") == 0 && armor->objectName() == armor_name;
+    return armor && getMark("qinggang") == 0 && armor->objectName() == armor_name;
 }
 
 QList<const Card *> Player::getJudgingArea() const{
@@ -436,11 +436,9 @@ Player::Phase Player::getPhase() const{
 }
 
 void Player::setPhase(Phase phase){
-    if(this->phase != phase){
-        this->phase = phase;
+    this->phase = phase;
 
-        emit phase_changed();
-    }
+    emit phase_changed();
 }
 
 bool Player::faceUp() const{
@@ -619,6 +617,15 @@ QList<int> Player::getPile(const QString &pile_name) const{
     return piles[pile_name];
 }
 
+QStringList Player::getPileNames() const{
+    QStringList names;
+    foreach(QString pile_name,piles.keys())
+    {
+        names.append(pile_name);
+    }
+    return names;
+}
+
 QString Player::getPileName(int card_id) const{
     foreach(QString pile_name, piles.keys()){
         QList<int> pile = piles[pile_name];
@@ -727,13 +734,13 @@ bool Player::isJilei(const Card *card) const{
 
         foreach(int card_id, card->getSubcards()){
             const Card *c = Sanguosha->getCard(card_id);
-            if(jilei_set.contains(c->getTypeId()))
+            if(jilei_set.contains(c->getTypeId())&&!hasEquip(c))
                 return true;
         }
 
         return false;
     }else
-        return jilei_set.contains(type);
+        return jilei_set.contains(type)&&!hasEquip(card);
 }
 
 bool Player::isCaoCao() const{

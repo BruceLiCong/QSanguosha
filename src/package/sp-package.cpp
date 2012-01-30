@@ -5,21 +5,33 @@
 #include "carditem.h"
 #include "engine.h"
 #include "standard.h"
+#include "maneuvering.h"
+#include "wisdompackage.h"
 
 class SPMoonSpearSkill: public WeaponSkill{
 public:
     SPMoonSpearSkill():WeaponSkill("sp_moonspear"){
-        events << CardResponsed;
+        events << CardFinished << CardResponsed;
     }
 
-    virtual bool trigger(TriggerEvent , ServerPlayer *player, QVariant &data) const{
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
         if(player->getPhase() != Player::NotActive)
             return false;
 
         CardStar card = NULL;
-        card = data.value<CardStar>();
+        if(event == CardFinished){
+            CardUseStruct card_use = data.value<CardUseStruct>();
+            card = card_use.card;
 
-        if(!card || !card->isBlack())
+            if(card == player->tag["MoonSpearSlash"].value<CardStar>()){
+                card = NULL;
+            }
+        }else if(event == CardResponsed){
+            card = data.value<CardStar>();
+            player->tag["MoonSpearSlash"] = data;
+        }
+
+        if(card == NULL || !card->isBlack())
             return false;
 
         Room *room = player->getRoom();
@@ -209,6 +221,52 @@ public:
     }
 };
 
+WeidiCard::WeidiCard(){
+    target_fixed = true;
+}
+
+void WeidiCard::onUse(Room *room, const CardUseStruct &card_use) const{
+    ServerPlayer *yuanshu = card_use.from;
+
+    QStringList choices;
+    if(yuanshu->hasLordSkill("jijiang")&&Slash::IsAvailable(yuanshu))
+        choices << "jijiang";
+
+    if(yuanshu->hasLordSkill("weidai")&&Analeptic::IsAvailable(yuanshu))
+        choices << "weidai";
+
+    if(choices.isEmpty())
+        return;
+
+    QString choice;
+    if(choices.length() == 1)
+        choice = choices.first();
+    else
+        choice = room->askForChoice(yuanshu, "weidi", "jijiang+weidai");
+
+    if(choice == "jijiang"){
+        QList<ServerPlayer *> targets;
+        foreach(ServerPlayer* target, room->getOtherPlayers(yuanshu)){
+            if(yuanshu->canSlash(target))
+                targets << target;
+        }
+
+        ServerPlayer* target = room->askForPlayerChosen(yuanshu, targets, "jijiang");
+        if(target){
+            CardUseStruct use;
+            use.card = new JijiangCard;
+            use.from = yuanshu;
+            use.to << target;
+            room->useCard(use);
+        }
+    }else{
+        CardUseStruct use;
+        use.card = new WeidaiCard;
+        use.from = yuanshu;
+        room->useCard(use);
+    }
+}
+
 class Weidi:public ZeroCardViewAsSkill{
 public:
     Weidi():ZeroCardViewAsSkill("weidi"){
@@ -216,11 +274,12 @@ public:
     }
 
     virtual bool isEnabledAtPlay(const Player *player) const{
-        return player->hasLordSkill("jijiang") && Slash::IsAvailable(player);
+        return (player->hasLordSkill("jijiang") && Slash::IsAvailable(player))
+                ||(player->hasLordSkill("weidai") && Analeptic::IsAvailable(player));
     }
 
     virtual const Card *viewAs() const{
-        return Sanguosha->cloneSkillCard("JijiangCard");
+        return new WeidiCard;
     }
 };
 
@@ -242,27 +301,6 @@ public:
     }
 };
 
-class Xuwei: public ZeroCardViewAsSkill{
-public:
-    Xuwei():ZeroCardViewAsSkill("xuwei"){
-        huanzhuang_card = new HuanzhuangCard;
-    }
-
-    virtual bool isEnabledAtPlay(const Player *player) const{
-        if(player->hasUsed("HuanzhuangCard"))
-            return false;
-
-        return player->getGeneralName() == "sp_diaochan";
-    }
-
-    virtual const Card *viewAs() const{
-        return huanzhuang_card;
-    }
-
-private:
-    HuanzhuangCard *huanzhuang_card;
-};
-
 class Xiuluo: public PhaseChangeSkill{
 public:
     Xiuluo():PhaseChangeSkill("xiuluo"){
@@ -277,19 +315,25 @@ public:
     }
 
     virtual bool onPhaseChange(ServerPlayer *target) const{
-        if(!target->askForSkillInvoke(objectName()))
-            return false;
+        bool once_success = false;
+        do{
+            once_success = false;
 
-        Room *room = target->getRoom();
-        int card_id = room->askForCardChosen(target, target, "j", objectName());
-        const Card *card = Sanguosha->getCard(card_id);
+            if(!target->askForSkillInvoke(objectName()))
+                return false;
 
-        QString suit_str = card->getSuitString();
-        QString pattern = QString(".%1").arg(suit_str.at(0).toUpper());
-        QString prompt = QString("@xiuluo:::%1").arg(suit_str);
-        if(room->askForCard(target, pattern, prompt)){
-            room->throwCard(card);
-        }
+            Room *room = target->getRoom();
+            int card_id = room->askForCardChosen(target, target, "j", objectName());
+            const Card *card = Sanguosha->getCard(card_id);
+
+            QString suit_str = card->getSuitString();
+            QString pattern = QString(".%1").arg(suit_str.at(0).toUpper());
+            QString prompt = QString("@xiuluo:::%1").arg(suit_str);
+            if(room->askForCard(target, pattern, prompt)){
+                room->throwCard(card);
+                once_success = true;
+            }
+        }while(!target->getCards("j").isEmpty() && once_success);
 
         return false;
     }
@@ -370,7 +414,6 @@ SPPackage::SPPackage()
     General *sp_diaochan = new General(this, "sp_diaochan", "qun", 3, false, true);
     sp_diaochan->addSkill("lijian");
     sp_diaochan->addSkill("biyue");
-    sp_diaochan->addSkill(new Xuwei);
 
     General *sp_sunshangxiang = new General(this, "sp_sunshangxiang", "shu", 3, false, true);
     sp_sunshangxiang->addSkill("jieyin");
@@ -399,6 +442,17 @@ SPPackage::SPPackage()
     sp_machao->addSkill("mashu");
     sp_machao->addSkill("tieji");
 
+    General *sp_jiaxu = new General(this, "sp_jiaxu", "wei", 3, true, true);
+    sp_jiaxu->addSkill("wansha");
+    sp_jiaxu->addSkill("luanwu");
+    sp_jiaxu->addSkill("weimu");
+    sp_jiaxu->addSkill("#@chaos-1");
+
+    General *sp_pangde = new General(this, "sp_pangde", "wei", 4, true, true);
+    sp_pangde->addSkill("mengjin");
+    sp_pangde->addSkill("mashu");
+
+    addMetaObject<WeidiCard>();
 }
 
 ADD_PACKAGE(SP);

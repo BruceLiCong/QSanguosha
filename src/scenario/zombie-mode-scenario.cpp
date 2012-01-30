@@ -5,6 +5,7 @@
 #include "clientplayer.h"
 #include "client.h"
 #include "carditem.h"
+#include "general.h"
 
 class ZombieRule: public ScenarioRule{
 public:
@@ -33,7 +34,7 @@ public:
 
         QString gender = player->getGeneral()->isMale() ? "male" : "female";
         room->broadcastInvoke("playAudio", QString("zombify-%1").arg(gender));
-        room->broadcastInvoke("updateStateItem", room->getRoleStateString());
+        room->updateStateItem();
 
         player->tag.remove("zombie");
     }

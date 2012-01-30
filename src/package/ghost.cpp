@@ -371,8 +371,6 @@ GhostPackage::GhostPackage()
     guisimahui->addSkill(new MarkAssignSkill("@disabuse", 1));
     guisimahui->addSkill(new Jiehuoh);
 
-    related_skills.insertMulti("jiehuoh", "#@disabuse");
-
     General *shamoke = new General(this, "shamoke", "shu", 4);
     shamoke->addSkill(new Qinwang);
 

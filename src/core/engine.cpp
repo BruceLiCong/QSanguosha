@@ -71,6 +71,7 @@ Engine::Engine()
                   << "Wisdom"
                   << "Test"
                   << "Ghost"
+                  << "Monster"
 
                   << "StandardCard"
                   << "StandardExCard"

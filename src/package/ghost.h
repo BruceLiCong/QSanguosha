@@ -5,7 +5,6 @@
 #include "card.h"
 #include "skill.h"
 #include "standard.h"
-#include "god.h"
 
 class GhostPackage : public Package{
     Q_OBJECT

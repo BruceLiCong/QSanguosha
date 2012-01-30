@@ -57,6 +57,7 @@ SOURCES += src/main.cpp \
 	src/package/yjcm-package.cpp \
         src/package/ghost.cpp \
 	src/package/bgm-package.cpp \
+        src/package/monster.cpp \
 	src/scenario/boss-mode-scenario.cpp \
 	src/scenario/couple-scenario.cpp \
 	src/scenario/fancheng-scenario.cpp \
@@ -122,7 +123,7 @@ SOURCES += src/main.cpp \
 	src/lua/lbaselib.c \
 	src/lua/lauxlib.c \
 	src/lua/lapi.c \
-	swig/sanguosha_wrap.cxx
+        swig/sanguosha_wrap.cxx
 
 HEADERS += src/client/aux-skills.h \
 	src/client/client.h \
@@ -171,6 +172,7 @@ HEADERS += src/client/aux-skills.h \
 	src/package/yjcm-package.h \
         src/package/ghost.h \
 	src/package/bgm-package.h \
+        src/package/monster.h \
 	src/scenario/boss-mode-scenario.h \
 	src/scenario/couple-scenario.h \
 	src/scenario/fancheng-scenario.h \
@@ -231,7 +233,8 @@ HEADERS += src/client/aux-skills.h \
 	src/lua/ldebug.h \
 	src/lua/lcode.h \
 	src/lua/lauxlib.h \
-	src/lua/lapi.h
+        src/lua/lapi.h
+
 	
 FORMS += src/dialog/cardoverview.ui \
 	src/dialog/configdialog.ui \

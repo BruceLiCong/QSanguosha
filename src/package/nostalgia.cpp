@@ -223,6 +223,68 @@ public:
     }
 };
 
+
+JiedaoCard::JiedaoCard(){
+    once = true;
+}
+
+bool JiedaoCard::targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const{
+    return targets.isEmpty() && to_select->getWeapon();
+}
+
+class JiedaoViewAsSkill: public ZeroCardViewAsSkill{
+public:
+    JiedaoViewAsSkill():ZeroCardViewAsSkill("jiedao"){
+    }
+
+    virtual const Card *viewAs() const{
+        JiedaoCard *card = new JiedaoCard;
+        card->setSkillName(objectName());
+        return card;
+    }
+
+    virtual bool isEnabledAtPlay(const Player *player) const{
+        return !player->hasUsed("JiedaoCard");
+    }
+
+};
+
+class Jiedao: public TriggerSkill{
+public:
+    Jiedao():TriggerSkill("jiedao"){
+        events  << PhaseChange << CardUsed;
+        view_as_skill = new JiedaoViewAsSkill;
+    }
+
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
+        Room *room = player->getRoom();
+//        QList<ServerPlayer *> targets = room->getOtherPlayers(player);
+        static ServerPlayer *target;
+        static const Weapon *weapon;
+        if(event == CardUsed && player->getPhase() == Player::Play){
+            CardUseStruct use = data.value<CardUseStruct>();
+            if(use.card->getSkillName() != "jiedao")
+                return false;
+ //           foreach(ServerPlayer *other, room->getOtherPlayers(player)){
+ //               if(other->getWeapon()){
+ //                   targets << other;
+ //               }
+ //           }
+ //           target = room->askForPlayerChosen(player, targets, objectName());
+            target = use.to.first();
+            weapon = use.to.first()->getWeapon();
+            room->moveCardTo(weapon, player, Player::Equip, true);
+            room->setPlayerFlag(player, "Jiedaoused");
+
+        }
+        else if(event == PhaseChange && player->getPhase() == Player::Finish && player->hasFlag("Jiedaoused")){
+            room->moveCardTo(weapon, target, Player::Equip, true);
+            room->setPlayerFlag(player, "-Jiedaoused");
+        }
+        return false;
+    }
+};
+
 NostalgiaPackage::NostalgiaPackage()
     :Package("nostalgia")
 {
@@ -239,12 +301,18 @@ NostalgiaPackage::NostalgiaPackage()
     super_zhouyu->addSkill("yingzi");
     super_zhouyu->addSkill(new SuperFanjian);
 
-    addMetaObject<SuperFanjianCard>();
-
     General *yixueshenzhaoyun = new General(this, "yixueshenzhaoyun", "god", 1);
     yixueshenzhaoyun->addSkill(new SuperJuejing);
     yixueshenzhaoyun->addSkill("longhun");
     yixueshenzhaoyun->addSkill(new Duojian);
+
+    General *longzhouyu = new General(this, "longzhouyu", "wu", 3);
+    longzhouyu->addSkill("yingzi");
+    longzhouyu->addSkill(new Jiedao);
+
+    addMetaObject<SuperFanjianCard>();
+    addMetaObject<JiedaoCard>();
+
 }
 
 NostalgiaCardPackage::NostalgiaCardPackage()

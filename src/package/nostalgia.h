@@ -12,6 +12,15 @@ public:
     virtual void onEffect(const CardEffectStruct &effect) const;
 };
 
+class JiedaoCard: public SkillCard{
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE JiedaoCard();
+
+    virtual bool targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const;
+};
+
 class NostalgiaPackage: public Package{
     Q_OBJECT
 

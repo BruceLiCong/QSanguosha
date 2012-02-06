@@ -42,12 +42,27 @@ public:
         return n + player->getLostHp();
     }
 };
+
+class Buhui: public ProhibitSkill{
+public:
+    Buhui():ProhibitSkill("buhui"){
+
+    }
+
+    virtual bool isProhibited(const Player *, const Player *, const Card *card) const{
+        return card->inherits("Slash") || card->inherits("Peach");
+    }
+};
+
 MonsterPackage::MonsterPackage()
     :Package("monster")
 {
     General *yaosima = new General(this, "yaosima", "wei", 3);
     yaosima->addSkill(new Zhabing);
     yaosima->addSkill(new Guimou);
+
+    General *yaozhoutai = new General(this, "yaozhoutai", "wu", 4);
+    yaozhoutai->addSkill(new Buhui);
 }
 
 ADD_PACKAGE(Monster)

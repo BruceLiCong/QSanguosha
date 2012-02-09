@@ -54,6 +54,32 @@ public:
     }
 };
 
+class Zhongyi: public TriggerSkill{
+public:
+    Zhongyi():TriggerSkill("zhongyi"){
+        events << CardLost;
+
+        frequency = Frequent;
+    }
+
+    virtual bool trigger(TriggerEvent , ServerPlayer *yaolingtong, QVariant &data) const{
+        if(yaolingtong->isKongcheng()){
+            CardMoveStar move = data.value<CardMoveStar>();
+
+            if(move->from_place == Player::Hand){
+                Room *room = yaolingtong->getRoom();
+                if(room->askForSkillInvoke(yaolingtong, objectName())){
+                    room->playSkillEffect(objectName());
+
+                    yaolingtong->drawCards(yaolingtong->getHp());
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
 MonsterPackage::MonsterPackage()
     :Package("monster")
 {
@@ -63,6 +89,9 @@ MonsterPackage::MonsterPackage()
 
     General *yaozhoutai = new General(this, "yaozhoutai", "wu", 4);
     yaozhoutai->addSkill(new Buhui);
+
+    General *yaolingtong = new General(this, "yaolingtong", "wu", 4);
+    yaolingtong->addSkill(new Zhongyi);
 }
 
 ADD_PACKAGE(Monster)

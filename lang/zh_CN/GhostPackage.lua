@@ -22,7 +22,7 @@ return{
 	["guihuaxiong"] = "鬼华雄",
 	["xiaoshou"] = "枭首",
 	[":xiaoshou"] = "你可以立即从对你造成伤害的来源处的装备区内获得一张牌，并可立即将它交给任意一名角色，或放置于任意一名角色的装备区内。",
-	["xiaoshou:obtain"] = "获得此牌",
+	["xiaoshou:obtain"] = "放入手牌",
 	["xiaoshou:equip"] = "装备此牌",
 	
 	["guisimahui"] = "鬼司马徽",

@@ -122,7 +122,7 @@ void ShouyeGhostCard::onEffect(const CardEffectStruct &effect) const{
 
 class ShouyeGhost: public OneCardViewAsSkill{
 public:
-    ShouyeGhost():OneCardViewAsSkill("shouye_ghost"){
+    ShouyeGhost():OneCardViewAsSkill("shouyeghost"){
 
     }
 
@@ -262,13 +262,14 @@ public:
                 return false;
             int x = shamoke->getMark("@dutiful");
             if(x > 0){
+                int y = damage.damage;
                 damage.damage += x;
                 data = QVariant::fromValue(damage);
 
                 LogMessage log;
                 log.type = "#QinwangBuff";
                 log.from = shamoke;
-                log.arg = QString::number(x);
+                log.arg = QString::number(y);
                 log.arg2 = QString::number(damage.damage);
                 shamoke->getRoom()->sendLog(log);
             }

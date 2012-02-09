@@ -131,7 +131,7 @@ public:
     }
 
     virtual bool viewFilter(const CardItem *to_select) const{
-        return !to_select->isEquipped() && to_select->getFilteredCard()->isRed();
+        return !to_select->isEquipped();
     }
 
     virtual const Card *viewAs(CardItem *card_item) const{

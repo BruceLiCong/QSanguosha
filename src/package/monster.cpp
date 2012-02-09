@@ -50,7 +50,7 @@ public:
     }
 
     virtual bool isProhibited(const Player *, const Player *, const Card *card) const{
-        return card->inherits("Slash") || card->inherits("Peach");
+        return card->inherits("Slash");
     }
 };
 

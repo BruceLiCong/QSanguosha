@@ -80,6 +80,57 @@ public:
     }
 };
 
+class Xieqin: public TriggerSkill{
+public:
+    Xieqin():TriggerSkill("xieqin"){
+        events << Damage;
+    }
+
+    virtual bool trigger(TriggerEvent , ServerPlayer *chengyu, QVariant &data) const{
+        DamageStruct damage = data.value<DamageStruct>();
+
+        if(chengyu->askForSkillInvoke(objectName(), data)){
+            Room *room = chengyu->getRoom();
+            room->playSkillEffect(objectName());
+            QList<ServerPlayer *> players = room->getOtherPlayers(damage.to);
+            ServerPlayer *target = room->askForPlayerChosen(chengyu, players, objectName());
+            int to_throw = room->askForCardChosen(chengyu, target, "he", objectName());
+            room->throwCard(to_throw);
+        }
+
+        return false;
+    }
+};
+
+class Shiwei: public TriggerSkill{
+public:
+    Shiwei():TriggerSkill("shiwei"){
+        events << StartJudge << FinishJudge;
+    }
+
+    virtual bool triggerable(const ServerPlayer *target) const{
+        return target->getRoom()->findPlayerBySkillName(objectName());
+    }
+
+    virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
+        Room *room = player->getRoom();
+        JudgeStar judge = data.value<JudgeStar>();
+        ServerPlayer *chengyu = room->findPlayerBySkillName(objectName());
+        static Card::Suit suit;
+
+        if(event == StartJudge && chengyu->askForSkillInvoke(objectName())){
+            suit = room->askForSuit(chengyu);
+        }
+        else if(event == FinishJudge){
+            CardStar card = judge->card;
+            if(suit == card->getSuit())
+                chengyu->drawCards(1);
+        }
+
+        return false;
+    }
+};
+
 MonsterPackage::MonsterPackage()
     :Package("monster")
 {
@@ -92,6 +143,10 @@ MonsterPackage::MonsterPackage()
 
     General *yaolingtong = new General(this, "yaolingtong", "wu", 4);
     yaolingtong->addSkill(new Zhongyi);
+
+    General *chengyu = new General(this, "chengyu", "wei", 3);
+    chengyu->addSkill(new Xieqin);
+    chengyu->addSkill(new Shiwei);
 }
 
 ADD_PACKAGE(Monster)

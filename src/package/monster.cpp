@@ -147,6 +147,7 @@ MonsterPackage::MonsterPackage()
     General *chengyu = new General(this, "chengyu", "wei", 3);
     chengyu->addSkill(new Xieqin);
     chengyu->addSkill(new Shiwei);
+
 }
 
 ADD_PACKAGE(Monster)

@@ -41,8 +41,14 @@ void ClientLogBox::appendLog(
     QString log;
 
     if(type.startsWith("$")){
-        const Card *card = Sanguosha->getCard(card_str.toInt());
-        QString log_name = card->getLogName();
+        QString log_name;
+        foreach(QString one_card, card_str.split("+")){
+            const Card *card = Sanguosha->getCard(one_card.toInt());
+            if(log_name.isEmpty())
+                log_name = card->getLogName();
+            else
+                log_name += ", " + card->getLogName();
+        }
         log_name = bold(log_name, Qt::yellow);
 
         log = Sanguosha->translate(type);
@@ -84,8 +90,11 @@ void ClientLogBox::appendLog(
                 const SkillCard *skill_card = qobject_cast<const SkillCard *>(card);
                 if(subcard_list.isEmpty() || !skill_card->willThrow())
                     log = tr("%from use skill [%1]").arg(skill_name);
-                else
+                else{
+                    if(card->inherits("DummyCard"))
+                        skill_name = bold(Sanguosha->translate("free-discard"), Qt::yellow);
                     log = tr("%from use skill [%1], and the cost is %2").arg(skill_name).arg(subcard_str);
+                }
             }else{
                 if(subcard_list.isEmpty())
                     log = tr("%from use skill [%1], played [%2]").arg(skill_name).arg(card_name);

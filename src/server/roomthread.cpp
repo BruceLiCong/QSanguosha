@@ -98,7 +98,7 @@ JudgeStructPattern &JudgeStructPattern::operator =(const QString &str){
 }
 
 JudgeStruct::JudgeStruct()
-    :who(NULL), card(NULL), good(true)
+    :who(NULL), card(NULL), good(true), time_consuming(false)
 {
 
 }
@@ -127,9 +127,19 @@ bool CardUseStruct::isValid() const{
 }
 
 void CardUseStruct::parse(const QString &str, Room *room){
-    QStringList words = str.split("->");
+    QStringList words = str.split("->", QString::KeepEmptyParts);
+    
+    Q_ASSERT(words.length() == 1 || words.length() == 2);
+
     QString card_str = words.at(0);
-    QString target_str = words.at(1);
+    QString target_str = ".";
+    
+    //@todo: it's observed that when split on "a->."
+    // only returns one QString, which is "a". Suspect
+    // it's a bug with QT regular expression. Figure out
+    // the cause of the issue.
+    if (words.length() == 2 && !words.at(1).isEmpty()) 
+        target_str = words.at(1);    
 
     card = Card::Parse(card_str);
 
@@ -347,10 +357,12 @@ bool RoomThread::trigger(TriggerEvent event, ServerPlayer *target, QVariant &dat
     }
 
     if(target){
-        foreach(AI *ai, room->ais)
+        foreach(AI *ai, room->ais){
             ai->filterEvent(event, target, data);
+        }
     }
 
+    delay(1);
     // pop event stack
     event_stack.pop_back();
 
@@ -389,7 +401,7 @@ void RoomThread::addTriggerSkill(const TriggerSkill *skill){
 }
 
 void RoomThread::delay(unsigned long secs){
-    if(room->property("to_test").toString().isEmpty()&&Config.value("AIDelay",1000).toInt()>0)
+    if(room->property("to_test").toString().isEmpty()&& Config.AIDelay>0)
         msleep(secs);
 }
 

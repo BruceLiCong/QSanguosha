@@ -117,7 +117,18 @@ void Card::setSuit(Suit suit){
 }
 
 bool Card::sameColorWith(const Card *other) const{
-    return isBlack() == other->isBlack();
+    return getColor() == other->getColor();
+}
+
+Card::Color Card::getColor() const{
+    switch(suit){
+    case Spade:
+    case Club: return Black;
+    case Heart:
+    case Diamond: return Red;
+    default:
+        return Colorless;
+    }
 }
 
 bool Card::isEquipped() const{
@@ -383,7 +394,7 @@ bool Card::targetFixed() const{
     return target_fixed;
 }
 
-bool Card::targetsFeasible(const QList<const Player *> &targets, const Player *Self) const{
+bool Card::targetsFeasible(const QList<const Player *> &targets, const Player *) const{
     if(target_fixed)
         return true;
     else
@@ -459,7 +470,7 @@ void Card::onMove(const CardMoveStruct &move) const{
 
 void Card::addSubcard(int card_id){
     if(card_id < 0)
-        qWarning(qPrintable(tr("Subcard must not be virtual card!")));
+        qWarning("%s", qPrintable(tr("Subcard must not be virtual card!")));
     else
         subcards << card_id;
 }
@@ -476,8 +487,8 @@ void Card::clearSubcards(){
     subcards.clear();
 }
 
-bool Card::isAvailable(const Player *) const{
-    return true;
+bool Card::isAvailable(const Player *player) const{
+    return !player->isJilei(this) && !player->isLocked(this);
 }
 
 const Card *Card::validate(const CardUseStruct *) const{
@@ -504,6 +515,23 @@ bool Card::willThrow() const{
 
 bool Card::canJilei() const{
     return can_jilei;
+}
+
+void Card::setFlags(const QString &flag) const{
+    static char symbol_c = '-';
+
+    if(flag.isEmpty())
+        return;
+    else if(flag == ".")
+        flags.clear();
+    else if(flag.startsWith(symbol_c))
+        flags.removeOne(flag);
+    else
+        flags << flag;
+}
+
+bool Card::hasFlag(const QString &flag) const{
+    return flags.contains(flag);
 }
 
 // ---------   Skill card     ------------------
@@ -539,7 +567,7 @@ QString SkillCard::toString() const{
 
 // ---------- Dummy card      -------------------
 
-DummyCard::DummyCard()
+DummyCard::DummyCard():SkillCard()
 {
     target_fixed = true;
     setObjectName("dummy");

@@ -72,7 +72,6 @@ QString General::getPixmapPath(const QString &category) const{
 
 void General::addSkill(Skill *skill){
     skill->setParent(this);
-    skill->initMediaSource();
     skill_set << skill->objectName();
 }
 
@@ -128,6 +127,14 @@ QSet<const TriggerSkill *> General::getTriggerSkills() const{
     return skills;
 }
 
+void General::addRelateSkill(const QString &skill_name){
+    related_skills << skill_name;
+}
+
+QStringList General::getRelatedSkillNames() const{
+    return related_skills;
+}
+
 QString General::getPackage() const{
     QObject *p = parent();
     if(p)
@@ -158,6 +165,12 @@ void General::lastWord() const{
         QStringList origin_generals = objectName().split("_");
         if(origin_generals.length()>1)
             filename = QString("audio/death/%1.ogg").arg(origin_generals.at(1));
+    }
+    if(!file.open(QIODevice::ReadOnly) && objectName().endsWith("f")){
+        QString origin_general = objectName();
+        origin_general.chop(1);
+        if(Sanguosha->getGeneral(origin_general))
+            filename = QString("audio/death/%1.ogg").arg(origin_general);
     }
     Sanguosha->playEffect(filename);
 }

@@ -4,11 +4,15 @@
 TARGET = QSanguosha
 QT += network sql declarative
 TEMPLATE = app
-CONFIG += warn_on audio qaxcontainer
+CONFIG += warn_on audio
 
 # If you want to enable joystick support, please uncomment the following line:
 # CONFIG += joystick
 # However, joystick is not supported under Mac OS X temporarily
+
+# If you want enable voice reading for chat content, uncomment the following line:
+# CONFIG += chatvoice
+# Also, this function can only enabled under Windows system as it make use of Microsoft TTS
 
 SOURCES += src/main.cpp \
 	src/client/aux-skills.cpp \
@@ -23,6 +27,7 @@ SOURCES += src/main.cpp \
 	src/core/player.cpp \
 	src/core/settings.cpp \
 	src/core/skill.cpp \
+	src/core/statistics.cpp \
 	src/dialog/cardeditor.cpp \
 	src/dialog/cardoverview.cpp \
 	src/dialog/choosegeneraldialog.cpp \
@@ -31,13 +36,13 @@ SOURCES += src/main.cpp \
 	src/dialog/customassigndialog.cpp \
 	src/dialog/distanceviewdialog.cpp \
 	src/dialog/generaloverview.cpp \
-	src/dialog/generalselector.cpp \
 	src/dialog/mainwindow.cpp \
 	src/dialog/packagingeditor.cpp \
 	src/dialog/playercarddialog.cpp \
 	src/dialog/roleassigndialog.cpp \
 	src/dialog/scenario-overview.cpp \
 	src/dialog/halldialog.cpp \
+	src/package/package.cpp \
 	src/package/exppattern.cpp \
 	src/package/firepackage.cpp \
 	src/package/god.cpp \
@@ -55,20 +60,23 @@ SOURCES += src/main.cpp \
 	src/package/wisdompackage.cpp \
 	src/package/yitianpackage.cpp \
 	src/package/yjcm-package.cpp \
-        src/package/ghost.cpp \
+	src/package/yjcm2012-package.cpp \
 	src/package/bgm-package.cpp \
+	src/package/special3v3-package.cpp \
+        src/package/ghost.cpp \
         src/package/monster.cpp \
+	src/scenario/scenario.cpp \
 	src/scenario/boss-mode-scenario.cpp \
 	src/scenario/couple-scenario.cpp \
 	src/scenario/fancheng-scenario.cpp \
 	src/scenario/guandu-scenario.cpp \
-	src/scenario/scenario.cpp \
 	src/scenario/scenerule.cpp \
 	src/scenario/miniscenarios.cpp \
 	src/scenario/zombie-mode-scenario.cpp \
 	src/server/ai.cpp \
 	src/server/contestdb.cpp \
 	src/server/gamerule.cpp \
+        src/server/generalselector.cpp \
 	src/server/room.cpp \
 	src/server/roomthread.cpp \
 	src/server/roomthread1v1.cpp \
@@ -82,6 +90,7 @@ SOURCES += src/main.cpp \
 	src/ui/clientlogbox.cpp \
 	src/ui/dashboard.cpp \
 	src/ui/indicatoritem.cpp \
+	src/ui/irregularbutton.cpp \
 	src/ui/photo.cpp \
 	src/ui/pixmap.cpp \
 	src/ui/pixmapanimation.cpp \
@@ -138,6 +147,7 @@ HEADERS += src/client/aux-skills.h \
 	src/core/player.h \
 	src/core/settings.h \
 	src/core/skill.h \
+	src/core/statistics.h \
 	src/dialog/cardeditor.h \
 	src/dialog/cardoverview.h \
 	src/dialog/choosegeneraldialog.h \
@@ -146,7 +156,6 @@ HEADERS += src/client/aux-skills.h \
 	src/dialog/customassigndialog.h \
 	src/dialog/distanceviewdialog.h \
 	src/dialog/generaloverview.h \
-	src/dialog/generalselector.h \
 	src/dialog/halldialog.h \
 	src/dialog/mainwindow.h \
 	src/dialog/packagingeditor.h \
@@ -170,8 +179,10 @@ HEADERS += src/client/aux-skills.h \
 	src/package/wisdompackage.h \
 	src/package/yitianpackage.h \
 	src/package/yjcm-package.h \
-        src/package/ghost.h \
+	src/package/yjcm2012-package.h \
 	src/package/bgm-package.h \
+	src/package/special3v3-package.h \
+        src/package/ghost.h \
         src/package/monster.h \
 	src/scenario/boss-mode-scenario.h \
 	src/scenario/couple-scenario.h \
@@ -184,6 +195,7 @@ HEADERS += src/client/aux-skills.h \
 	src/server/ai.h \
 	src/server/contestdb.h \
 	src/server/gamerule.h \
+	src/server/generalselector.h \
 	src/server/room.h \
 	src/server/roomthread.h \
 	src/server/roomthread1v1.h \
@@ -198,6 +210,7 @@ HEADERS += src/client/aux-skills.h \
 	src/ui/clientlogbox.h \
 	src/ui/dashboard.h \
 	src/ui/indicatoritem.h \
+	src/ui/irregularbutton.h \
 	src/ui/photo.h \
 	src/ui/pixmap.h \
 	src/ui/pixmapanimation.h \
@@ -257,7 +270,12 @@ win32{
 	RC_FILE += resource/icon.rc
 }
 
-LIBS += -L. -lm
+macx{
+    ICON = resource/icon/sgs.icns
+}
+
+
+LIBS += -L.
 
 CONFIG(audio){
 	DEFINES += AUDIO_SUPPORT
@@ -272,6 +290,13 @@ CONFIG(joystick){
 	SOURCES += src/ui/joystick.cpp
 	win32: LIBS += -lplibjs -lplibul -lwinmm
 	unix: LIBS += -lplibjs -lplibul
+}
+
+CONFIG(chatvoice){
+    win32{
+        CONFIG += qaxcontainer
+        DEFINES += CHAT_VOICE
+    }
 }
 
 TRANSLATIONS += sanguosha.ts

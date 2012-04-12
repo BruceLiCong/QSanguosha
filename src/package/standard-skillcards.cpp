@@ -119,7 +119,7 @@ void FanjianCard::onEffect(const CardEffectStruct &effect) const{
 
     int card_id = zhouyu->getRandomHandCardId();
     const Card *card = Sanguosha->getCard(card_id);
-    Card::Suit suit = room->askForSuit(target);
+    Card::Suit suit = room->askForSuit(target, "fanjian");
 
     LogMessage log;
     log.type = "#ChooseSuit";
@@ -172,12 +172,12 @@ bool LijianCard::targetsFeasible(const QList<const Player *> &targets, const Pla
 
 void LijianCard::use(Room *room, ServerPlayer *, const QList<ServerPlayer *> &targets) const{
     room->throwCard(this);
+    room->playSkillEffect("lijian");
 
     ServerPlayer *to = targets.at(0);
     ServerPlayer *from = targets.at(1);
 
     Duel *duel = new Duel(Card::NoSuit, 0);
-    duel->setSkillName("lijian");
     duel->setCancelable(false);
 
     CardUseStruct use;
@@ -247,6 +247,8 @@ bool LiuliCard::targetFilter(const QList<const Player *> &targets, const Player 
     int card_id = subcards.first();
     if(Self->getWeapon() && Self->getWeapon()->getId() == card_id)
         return Self->distanceTo(to_select) <= 1;
+    else if(Self->getOffensiveHorse() && Self->getOffensiveHorse()->getId() == card_id)
+        return Self->distanceTo(to_select) <= (Self->getWeapon()?Self->getWeapon()->getRange():1);
     else
         return true;
 }
@@ -290,5 +292,16 @@ CheatCard::CheatCard(){
 void CheatCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
     if(Config.FreeChoose)
         room->obtainCard(source, subcards.first());
+}
+
+ChangeCard::ChangeCard(){
+    target_fixed = true;
+}
+
+void ChangeCard::use(Room *room, ServerPlayer *source, const QList<ServerPlayer *> &targets) const{
+    if(Config.FreeChoose){
+        QString name = Self->tag["GeneralName"].toString();
+        room->transfigure(source, name, false, true);
+    }
 }
 

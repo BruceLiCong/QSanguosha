@@ -116,7 +116,7 @@ void SuperFanjianCard::onEffect(const CardEffectStruct &effect) const{
 
     int card_id = superzhouyu->getRandomHandCardId();
     const Card *card = Sanguosha->getCard(card_id);
-    Card::Suit suit = room->askForSuit(target);
+    Card::Suit suit = room->askForSuit(target, "superfanjian");
 
     LogMessage log;
     log.type = "#ChooseSuit";

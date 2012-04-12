@@ -9,7 +9,8 @@ class Recorder;
 #include "player.h"
 #include "socket.h"
 
-#include <QMutex>
+#include <QSemaphore>
+#include <QDateTime>
 
 class ServerPlayer : public Player
 {
@@ -27,7 +28,8 @@ public:
     void unicast(const QString &message) const;
     void drawCard(const Card *card);
     Room *getRoom() const;
-    void playCardEffect(const Card *card);
+    void playCardEffect(const Card *card) const;
+    void playCardEffect(const QString &card_name) const;
     int getRandomHandCardId() const;
     const Card *getRandomHandCard() const;
     void obtainCard(const Card *card);
@@ -37,7 +39,7 @@ public:
     void bury();
     void throwAllMarks();
     void clearPrivatePiles();
-    void drawCards(int n, bool set_emotion = true);
+    void drawCards(int n, bool set_emotion = true, const QString &reason = QString());
     bool askForSkillInvoke(const QString &skill_name, const QVariant &data = QVariant());
     QList<int> forceToDiscard(int discard_num, bool include_equip);
     QList<int> handCards() const;
@@ -48,10 +50,11 @@ public:
     void kick();
     bool pindian(ServerPlayer *target, const QString &reason, const Card *card1 = NULL);
     void turnOver();
-    void play();
+    void play(QList<Player::Phase> set_phases = QList<Player::Phase>());
 
     QList<Player::Phase> &getPhases();
     void skip(Player::Phase phase);
+    void skip();
 
     void gainMark(const QString &mark, int n = 1);
     void loseMark(const QString &mark, int n = 1);
@@ -84,16 +87,42 @@ public:
     void clearSelected();
 
     int getGeneralMaxHP() const;
+    int getGeneralMaxHp() const;
     virtual QString getGameMode() const;
 
     QString getIp() const;
     void introduceTo(ServerPlayer *player);
     void marshal(ServerPlayer *player) const;
 
+    void addToPile(const QString &pile_name, const Card *card, bool open = true);
     void addToPile(const QString &pile_name, int card_id, bool open = true);
-    void gainAnExtraTurn();
+    void gainAnExtraTurn(ServerPlayer *clearflag = NULL);
 
     void copyFrom(ServerPlayer* sp);
+
+    void startNetworkDelayTest();
+    qint64 endNetworkDelayTest();
+
+    //Synchronization helpers
+    enum SemaphoreType {SEMA_CHOOSE_GENERAL, SEMA_CHOOSE_GENERAL2, SEMA_COMMAND, SEMA_CHOOSE_ROLE};
+    inline QSemaphore* getSemaphore(SemaphoreType type){ return semas[type]; }
+    inline void acquireLock(SemaphoreType type){ semas[type]->acquire(); }
+    inline bool tryAcquireLock(SemaphoreType type, int timeout = 0){
+        return semas[type]->tryAcquire(1, timeout); 
+    }
+    inline void releaseLock(SemaphoreType type){ semas[type]->release(); }
+    inline void drainLock(SemaphoreType type){ while ((semas[type]->tryAcquire())) ; }
+    inline void drainAllLocks(){
+        for(int i=0; i< S_NUM_SEMAPHORES; i++){
+            drainLock((SemaphoreType)i);
+        }
+    }
+
+
+protected:    
+    //Synchronization helpers
+    QSemaphore **semas;
+    static const int S_NUM_SEMAPHORES;    
 
 private:
     ClientSocket *socket;
@@ -106,6 +135,7 @@ private:
     QList<Phase> phases;
     ServerPlayer *next;
     QStringList selected; // 3v3 mode use only
+    QDateTime test_time;
 
 private slots:
     void getMessage(char *message);

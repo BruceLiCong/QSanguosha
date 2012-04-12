@@ -337,6 +337,7 @@ void MainWindow::enterRoom(){
 
     ui->actionStart_Game->setEnabled(false);
     ui->actionStart_Server->setEnabled(false);
+	ui->actionAI_Melee->setEnabled(false);
 
     RoomScene *room_scene = new RoomScene(this);
 
@@ -362,7 +363,17 @@ void MainWindow::enterRoom(){
         connect(ui->actionDeath_note, SIGNAL(triggered()), room_scene, SLOT(makeKilling()));
         connect(ui->actionDamage_maker, SIGNAL(triggered()), room_scene, SLOT(makeDamage()));
         connect(ui->actionRevive_wand, SIGNAL(triggered()), room_scene, SLOT(makeReviving()));
+        connect(ui->actionSend_lowlevel_command, SIGNAL(triggered()), this, SLOT(sendLowLevelCommand()));
         connect(ui->actionExecute_script_at_server_side, SIGNAL(triggered()), room_scene, SLOT(doScript()));
+    }
+    else{
+        ui->menuCheat->setEnabled(false);
+        ui->actionGet_card->disconnect();
+        ui->actionDeath_note->disconnect();
+        ui->actionDamage_maker->disconnect();
+        ui->actionRevive_wand->disconnect();
+        ui->actionSend_lowlevel_command->disconnect();
+        ui->actionExecute_script_at_server_side->disconnect();
     }
 
     connect(room_scene, SIGNAL(restart()), this, SLOT(startConnection()));
@@ -391,6 +402,13 @@ void MainWindow::gotoStartScene(){
     setCentralWidget(view);
     restoreFromConfig();
 
+    ui->menuCheat->setEnabled(false);
+    ui->actionGet_card->disconnect();
+    ui->actionDeath_note->disconnect();
+    ui->actionDamage_maker->disconnect();
+    ui->actionRevive_wand->disconnect();
+    ui->actionSend_lowlevel_command->disconnect();
+    ui->actionExecute_script_at_server_side->disconnect();
     gotoScene(start_scene);
 
     addAction(ui->actionShow_Hide_Menu);
@@ -445,6 +463,7 @@ void MainWindow::on_actionAbout_triggered()
                       "totally written in C++ Qt GUI framework <br />"
                       "My Email: <a href='mailto:%1' style = \"color:#0072c1; \">%1</a> <br/>"
                       "My QQ: 365840793 <br/>"
+                      "My Weibo: http://weibo.com/moligaloo <br/>"
                       ).arg(email));
 
     QString config;
@@ -465,11 +484,10 @@ void MainWindow::on_actionAbout_triggered()
     content.append(tr("Compilation time: %1 %2 <br/>").arg(date).arg(time));
 
     QString project_url = "http://github.com/Moligaloo/QSanguosha";
-    content.append(tr("Project home: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(project_url));
+    content.append(tr("Source code: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(project_url));
 
     QString forum_url = "http://qsanguosha.com";
     content.append(tr("Forum: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(forum_url));
-
 
     Window *window = new Window(tr("About QSanguosha"), QSize(420, 450));
     scene->addItem(window);
@@ -737,13 +755,14 @@ QGroupBox *MeleeDialog::createGeneralBox(){
     QFormLayout *form_layout = new QFormLayout;
     spinbox = new QSpinBox;
     spinbox->setRange(1, 50);
-    spinbox->setValue(10);
+    spinbox->setValue(1);
 
     start_button = new QPushButton(tr("Start"));
     connect(start_button, SIGNAL(clicked()), this, SLOT(startTest()));
 
     loop_checkbox = new QCheckBox(tr("LOOP"));
     loop_checkbox->setObjectName("loop_checkbox");
+    loop_checkbox->setChecked(true);
 
     form_layout->addRow(tr("Num of rooms"), spinbox);
     form_layout->addRow(loop_checkbox, start_button);
@@ -810,8 +829,9 @@ void MeleeDialog::startTest(){
     if(server){
         server->gamesOver();
     }else{
-        server = new Server(this);
+        server = new Server(this->parentWidget());
         server->listen();
+        connect(server, SIGNAL(server_message(QString)), server_log,SLOT(append(QString)));
     }
     Config.AIDelay = 0;
     room_count = spinbox->value();
@@ -819,7 +839,6 @@ void MeleeDialog::startTest(){
         Room *room = server->createNewRoom();
         connect(room, SIGNAL(game_start()), this, SLOT(onGameStart()));
         connect(room, SIGNAL(game_over(QString)), this, SLOT(onGameOver(QString)));
-        connect(server, SIGNAL(server_message(QString)), server_log,SLOT(append(QString)));
 
         room->startTest(avatar_button->property("to_test").toString());
     }
@@ -878,7 +897,6 @@ void MeleeDialog::onGameOver(const QString &winner){
         Room *room = server->createNewRoom();
         connect(room, SIGNAL(game_start()), this, SLOT(onGameStart()));
         connect(room, SIGNAL(game_over(QString)), this, SLOT(onGameOver(QString)));
-        connect(server, SIGNAL(server_message(QString)), server_log,SLOT(append(QString)));
 
         room->startTest(avatar_button->property("to_test").toString());
     }
@@ -994,7 +1012,7 @@ void MainWindow::on_actionReplay_file_convert_triggered()
     }
 }
 
-void MainWindow::on_actionSend_lowlevel_command_triggered()
+void MainWindow::sendLowLevelCommand()
 {
     QString command = QInputDialog::getText(this, tr("Send low level command"), tr("Please input the raw low level command"));
     if(!command.isEmpty())
@@ -1033,7 +1051,7 @@ void MainWindow::on_actionView_ban_list_triggered()
 void MainWindow::on_actionAbout_fmod_triggered()
 {
     QString content = tr("FMOD is a proprietary audio library made by Firelight Technologies");
-    content.append("<p align='center'> <img src='image/system/fmod.png' /> </p> <br/>");
+    content.append("<p align='center'> <img src='image/logo/fmod.png' /> </p> <br/>");
 
     QString address = "http://www.fmod.org";
     content.append(tr("Official site: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(address));
@@ -1057,7 +1075,7 @@ void MainWindow::on_actionAbout_fmod_triggered()
 void MainWindow::on_actionAbout_Lua_triggered()
 {
     QString content = tr("Lua is a powerful, fast, lightweight, embeddable scripting language.");
-    content.append("<p align='center'> <img src='image/system/lua.png' /> </p> <br/>");
+    content.append("<p align='center'> <img src='image/logo/lua.png' /> </p> <br/>");
 
     QString address = "http://www.lua.org";
     content.append(tr("Official site: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(address));

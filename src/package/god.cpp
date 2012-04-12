@@ -88,6 +88,7 @@ public:
             log.from = shenguanyu;
             log.to << foe;
             log.arg = QString::number(max);
+            log.arg2 = "wuhun";
             room->sendLog(log);
 
             room->killPlayer(foe);
@@ -424,6 +425,7 @@ public:
         log.type = event == Damage ? "#KuangbaoDamage" : "#KuangbaoDamaged";
         log.from = player;
         log.arg = QString::number(damage.damage);
+        log.arg2 = objectName();
         player->getRoom()->sendLog(log);
 
         player->gainMark("@wrath", damage.damage);
@@ -629,6 +631,7 @@ public:
             return;
 
         Room *room = shenzhuge->getRoom();
+        room->playSkillEffect("qixing");
         room->fillAG(stars, shenzhuge);
 
         int ai_delay = Config.AIDelay;
@@ -662,6 +665,7 @@ public:
         log.type = "#QixingExchange";
         log.from = shenzhuge;
         log.arg = QString::number(n);
+        log.arg2 = "qixing";
         room->sendLog(log);
 
         delete exchange_card;
@@ -740,7 +744,7 @@ public:
     }
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const{
-        return  pattern == "@kuangfeng";
+        return pattern == "@@kuangfeng";
     }
 
     virtual const Card *viewAs() const{
@@ -788,10 +792,10 @@ public:
         Room *room = target->getRoom();
         if(target->getPhase() == Player::Finish){
             if(target->getMark("@star") > 0 && target->hasSkill("kuangfeng"))
-                room->askForUseCard(target, "@kuangfeng", "@@kuangfeng-card");
+                room->askForUseCard(target, "@@kuangfeng", "@kuangfeng-card");
 
             if(target->getMark("@star") > 0 && target->hasSkill("dawu"))
-                room->askForUseCard(target, "@dawu", "@@dawu-card");
+                room->askForUseCard(target, "@@dawu", "@dawu-card");
         }else if(target->getPhase() == Player::Start){
             QList<ServerPlayer *> players = room->getAllPlayers();
             foreach(ServerPlayer *player, players){
@@ -857,7 +861,7 @@ public:
     }
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const{
-        return  pattern == "@dawu";
+        return pattern == "@@dawu";
     }
 
     virtual const Card *viewAs() const{
@@ -1052,6 +1056,7 @@ public:
     }
 
     virtual bool trigger(TriggerEvent event, ServerPlayer *player, QVariant &data) const{
+        player->setMark("JilveEvent",(int)event);
         if(event == CardUsed || event == CardResponsed){
             CardStar card = NULL;
             if(event == CardUsed)
@@ -1076,7 +1081,7 @@ public:
                 fangzhu->trigger(event, player, data);
             }
         }
-
+        player->setMark("JilveEvent",0);
         return false;
     }
 
@@ -1133,9 +1138,10 @@ public:
         log.type = "#LianpoCanInvoke";
         log.from = shensimayi;
         log.arg = QString::number(n);
+        log.arg2 = objectName();
         room->sendLog(log);
 
-        shensimayi->gainAnExtraTurn();
+        shensimayi->gainAnExtraTurn(player);
 
         return false;
     }
@@ -1148,6 +1154,8 @@ public:
     }
 
     virtual int getDrawNum(ServerPlayer *player, int n) const{
+        if(player->isWounded())
+            player->getRoom()->playSkillEffect(objectName());
         return n + player->getLostHp();
     }
 };
@@ -1259,8 +1267,8 @@ public:
         return new_card;
     }
 
-    virtual bool useCardSoundEffect() const{
-        return true;
+    virtual int getEffectIndex(const ServerPlayer *, const Card *card) const{
+        return static_cast<int>(card->getSuit()) + 1;
     }
 };
 

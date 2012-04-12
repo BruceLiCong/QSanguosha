@@ -75,6 +75,7 @@ public:
 
     void checkVersion(const QString &server_version);
     void setup(const QString &setup_str);
+    void networkDelayTest(const QString&);
     void addPlayer(const QString &player_info);
     void removePlayer(const QString &player_name);
     void drawCards(const QString &cards_str);
@@ -96,6 +97,7 @@ public:
     void revivePlayer(const QString &player_name);
     void warn(const QString &);
     void setMark(const QString &mark_str);
+    void doFilter(const QString &);
     void showCard(const QString &show_str);
     void doGuanxing(const QString &guanxing_str);
     void doGongxin(const QString &gongxin_str);
@@ -108,12 +110,14 @@ public:
     void acquireSkill(const QString &acquire_str);
     void animate(const QString &animate_str);
     void jilei(const QString &jilei_str);
+    void cardLock(const QString &card_str);
     void judgeResult(const QString &result_str);
     void setScreenName(const QString &set_str);
     void setFixedDistance(const QString &set_str);
     void pile(const QString &pile_str);
     void transfigure(const QString &transfigure_tr);
     void updateStateItem(const QString &state_str);
+    void setStatistics(const QString &property_str);
 
     void moveCard(const QString &move_str);
     void moveNCards(const QString &move_str);
@@ -122,6 +126,7 @@ public:
     void askForAG(const QString &);
     void takeAG(const QString &take_str);
     void clearAG(const QString &);
+    void disableAG(const QString &disable_str);
 
     void askForCard(const QString &request_str);
     void askForUseCard(const QString &request_str);
@@ -175,6 +180,7 @@ public slots:
     void choosePlayer(const Player *player);
     void trust();
     void requestCard(int card_id);
+    void changeGeneral(QString name);
     void addRobot();
     void fillRobots();
     void arrange(const QStringList &order);
@@ -221,7 +227,7 @@ signals:
     void player_removed(const QString &player_name);
     void generals_got(const QStringList &generals);
     void seats_arranged(const QList<const ClientPlayer*> &seats);
-    void hp_changed(const QString &who, int delta, DamageStruct::Nature nature);
+    void hp_changed(const QString &who, int delta, DamageStruct::Nature nature, bool losthp);
     void status_changed(Client::Status new_status);
     void avatars_hiden();
     void pile_cleared();
@@ -253,10 +259,12 @@ signals:
 
     void skill_attached(const QString &skill_name, bool from_left);
     void skill_detached(const QString &skill_name);
+    void do_filter();
 
     void ag_filled(const QList<int> &card_ids);
     void ag_taken(const ClientPlayer *taker, int card_id);
     void ag_cleared();
+    void ag_disabled(bool);
 
     void generals_filled(const QStringList &general_names);
     void general_taken(const QString &who, const QString &name);

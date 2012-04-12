@@ -97,31 +97,43 @@ QWidget *ServerDialog::createPackageTab(){
     QGroupBox *box1 = new QGroupBox(tr("General package"));
     QGroupBox *box2 = new QGroupBox(tr("Card package"));
 
-    QVBoxLayout *layout1 = new QVBoxLayout;
-    QVBoxLayout *layout2 = new QVBoxLayout;
+    QGridLayout *layout1 = new QGridLayout;
+    QGridLayout *layout2 = new QGridLayout;
     box1->setLayout(layout1);
     box2->setLayout(layout2);
 
+    int i = 0, j = 0;
+    int row = 0, column = 0;
     foreach(QString extension, extensions){
         const Package *package = Sanguosha->findChild<const Package *>(extension);
         if(package == NULL)
             continue;
 
+        bool forbid_package = Config.value("ForbidPackages").toString().contains(extension);
         QCheckBox *checkbox = new QCheckBox;
         checkbox->setObjectName(extension);
         checkbox->setText(Sanguosha->translate(extension));
-        checkbox->setChecked(! ban_packages.contains(extension));
+        checkbox->setChecked(!ban_packages.contains(extension) && !forbid_package);
+        checkbox->setEnabled(!forbid_package);
 
         extension_group->addButton(checkbox);
 
         switch(package->getType()){
         case Package::GeneralPack: {
-                layout1->addWidget(checkbox);
+                row = i / 5;
+                column = i % 5;
+                i++;
+
+                layout1->addWidget(checkbox, row, column+1);
                 break;
             }
 
         case Package::CardPack: {
-                layout2->addWidget(checkbox);
+                row = j / 5;
+                column = j % 5;
+                j++;
+
+                layout2->addWidget(checkbox, row, column+1);
                 break;
             }
 
@@ -130,11 +142,8 @@ QWidget *ServerDialog::createPackageTab(){
         }
     }
 
-    layout1->addStretch();
-    layout2->addStretch();
-
     QWidget *widget = new QWidget;
-    QHBoxLayout *layout = new QHBoxLayout;
+    QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(box1);
     layout->addWidget(box2);
 
@@ -178,14 +187,13 @@ QWidget *ServerDialog::createAdvancedTab(){
     scene_checkbox->setChecked(Config.EnableScene);	//changjing
     //changjing
 
+    max_hp_label = new QLabel(tr("Max HP scheme"));
+
     max_hp_scheme_combobox = new QComboBox;
     max_hp_scheme_combobox->addItem(tr("Sum - 3"));
     max_hp_scheme_combobox->addItem(tr("Minimum"));
     max_hp_scheme_combobox->addItem(tr("Average"));
     max_hp_scheme_combobox->setCurrentIndex(Config.MaxHpScheme);
-    max_hp_scheme_combobox->setEnabled(Config.Enable2ndGeneral);
-    connect(second_general_checkbox, SIGNAL(toggled(bool)), max_hp_scheme_combobox, SLOT(setEnabled(bool)));
-
     second_general_checkbox->setChecked(Config.Enable2ndGeneral);
 
 
@@ -223,14 +231,12 @@ QWidget *ServerDialog::createAdvancedTab(){
     layout->addWidget(contest_mode_checkbox);
     layout->addWidget(forbid_same_ip_checkbox);
     layout->addWidget(disable_chat_checkbox);
-    layout->addWidget(free_choose_checkbox);
-    layout->addWidget(free_assign_checkbox);
+    layout->addLayout(HLay(free_choose_checkbox, free_assign_checkbox));
     layout->addWidget(free_assign_self_checkbox);
     layout->addLayout(HLay(new QLabel(tr("Upperlimit for general")), maxchoice_spinbox));
     layout->addWidget(second_general_checkbox);
-    layout->addLayout(HLay(new QLabel(tr("Max HP scheme")), max_hp_scheme_combobox));
-    layout->addWidget(basara_checkbox);
-    layout->addWidget(hegemony_checkbox);
+    layout->addLayout(HLay(max_hp_label, max_hp_scheme_combobox));
+    layout->addLayout(HLay(basara_checkbox, hegemony_checkbox));
     layout->addWidget(scene_checkbox);		//changjing
     layout->addWidget(announce_ip_checkbox);
     layout->addLayout(HLay(new QLabel(tr("Address")), address_edit));
@@ -240,6 +246,12 @@ QWidget *ServerDialog::createAdvancedTab(){
 
     QWidget *widget = new QWidget;
     widget->setLayout(layout);
+
+    max_hp_label->setVisible(Config.Enable2ndGeneral);
+    connect(second_general_checkbox, SIGNAL(toggled(bool)), max_hp_label, SLOT(setVisible(bool)));
+    max_hp_scheme_combobox->setVisible(Config.Enable2ndGeneral);
+    connect(second_general_checkbox, SIGNAL(toggled(bool)), max_hp_scheme_combobox, SLOT(setVisible(bool)));
+
     return widget;
 }
 
@@ -489,6 +501,7 @@ QGroupBox *ServerDialog::create3v3Box(){
     QVBoxLayout *vlayout = new QVBoxLayout;
 
     standard_3v3_radiobutton = new QRadioButton(tr("Standard mode"));
+    new_3v3_radiobutton = new QRadioButton(tr("New Mode"));
     QRadioButton *extend = new QRadioButton(tr("Extension mode"));
     QPushButton *extend_edit_button = new QPushButton(tr("General selection ..."));
     extend_edit_button->setEnabled(false);
@@ -514,14 +527,18 @@ QGroupBox *ServerDialog::create3v3Box(){
     }
 
     vlayout->addWidget(standard_3v3_radiobutton);
+    vlayout->addWidget(new_3v3_radiobutton);
     vlayout->addLayout(HLay(extend, extend_edit_button));
     vlayout->addWidget(exclude_disaster_checkbox);
     vlayout->addLayout(HLay(new QLabel(tr("Role choose")), role_choose_combobox));
     box->setLayout(vlayout);
 
     bool using_extension = Config.value("3v3/UsingExtension", false).toBool();
+    bool using_new_mode = Config.value("3v3/UsingNewMode", false).toBool();
     if(using_extension)
         extend->setChecked(true);
+    else if(using_new_mode)
+        new_3v3_radiobutton->setChecked(true);
     else
         standard_3v3_radiobutton->setChecked(true);
 
@@ -633,7 +650,7 @@ QGroupBox *ServerDialog::createGameModeBox(){
     for(int i=0; i<item_list.length(); i++){
         QObject *item = item_list.at(i);
 
-        QVBoxLayout *side = i < item_list.length()/2 ? left : right;
+        QVBoxLayout *side = i < item_list.length()/2 - 2 ? left : right;
 
         if(item->isWidgetType()){
             QWidget *widget = qobject_cast<QWidget *>(item);
@@ -900,9 +917,10 @@ bool ServerDialog::config(){
     Config.setValue("Address", Config.Address);
 
     Config.beginGroup("3v3");
-    Config.setValue("UsingExtension", ! standard_3v3_radiobutton->isChecked());
+    Config.setValue("UsingExtension", !standard_3v3_radiobutton->isChecked() && !new_3v3_radiobutton->isChecked());
     Config.setValue("RoleChoose", role_choose_combobox->itemData(role_choose_combobox->currentIndex()).toString());
     Config.setValue("ExcludeDisaster", exclude_disaster_checkbox->isChecked());
+    Config.setValue("UsingNewMode", new_3v3_radiobutton->isChecked());
     Config.endGroup();
 
     QSet<QString> ban_packages;

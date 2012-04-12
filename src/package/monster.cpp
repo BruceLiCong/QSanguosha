@@ -119,7 +119,7 @@ public:
         static Card::Suit suit;
 
         if(event == StartJudge && chengyu->askForSkillInvoke(objectName())){
-            suit = room->askForSuit(chengyu);
+            suit = room->askForSuit(chengyu, "shiwei");
         }
         else if(event == FinishJudge){
             CardStar card = judge->card;

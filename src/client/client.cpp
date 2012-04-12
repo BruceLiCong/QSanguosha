@@ -37,6 +37,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks["hallEntered"] = &Client::hallEntered;
 
     callbacks["setup"] = &Client::setup;
+    callbacks["networkDelayTest"] = &Client::networkDelayTest;
     callbacks["addPlayer"] = &Client::addPlayer;
     callbacks["removePlayer"] = &Client::removePlayer;
     callbacks["startInXs"] = &Client::startInXs;
@@ -51,6 +52,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks["revivePlayer"] = &Client::revivePlayer;
     callbacks["showCard"] = &Client::showCard;
     callbacks["setMark"] = &Client::setMark;
+    callbacks["doFilter"] = &Client::doFilter;
     callbacks["log"] = &Client::log;
     callbacks["speak"] = &Client::speak;
     callbacks["acquireSkill"] = &Client::acquireSkill;
@@ -66,6 +68,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks["setFixedDistance"] = &Client::setFixedDistance;
     callbacks["transfigure"] = &Client::transfigure;
     callbacks["jilei"] = &Client::jilei;
+    callbacks["cardLock"] = &Client::cardLock;
     callbacks["pile"] = &Client::pile;
 
     callbacks["updateStateItem"] = &Client::updateStateItem;
@@ -80,6 +83,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks["drawCards"] = &Client::drawCards;
     callbacks["clearPile"] = &Client::clearPile;
     callbacks["setPileNumber"] = &Client::setPileNumber;
+    callbacks["setStatistics"] = &Client::setStatistics;
 
     // interactive methods
     callbacks["activate"] = &Client::activate;
@@ -108,6 +112,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks["askForAG"] = &Client::askForAG;
     callbacks["takeAG"] = &Client::takeAG;
     callbacks["clearAG"] = &Client::clearAG;
+    callbacks["disableAG"] = &Client::disableAG;
 
     // 3v3 mode & 1v1 mode
     callbacks["fillGenerals"] = &Client::fillGenerals;
@@ -175,6 +180,10 @@ void Client::signup(){
         }
         request(signup_str);
     }
+}
+
+void Client::networkDelayTest(const QString &){
+    request("networkDelayTest .");
 }
 
 void Client::request(const QString &message){
@@ -357,6 +366,11 @@ void Client::requestCard(int card_id){
     request(QString("useCard @CheatCard=%1->.").arg(card_id));
 }
 
+void Client::changeGeneral(QString name){
+    Self->tag["GeneralName"] = name;
+    request(QString("useCard @ChangeCard=.->."));
+}
+
 void Client::addRobot(){
     request("addRobot .");
 }
@@ -513,7 +527,7 @@ void Client::startGame(const QString &){
 }
 
 void Client::hpChange(const QString &change_str){
-    QRegExp rx("(.+):(-?\\d+)([FT]*)");
+    QRegExp rx("(.+):(-?\\d+)([FTL]*)");
 
     if(!rx.exactMatch(change_str))
         return;
@@ -531,11 +545,11 @@ void Client::hpChange(const QString &change_str){
     else
         nature = DamageStruct::Normal;
 
-    emit hp_changed(who, delta, nature);
+    emit hp_changed(who, delta, nature, nature_str == "L");
 }
 
 void Client::setStatus(Status status){
-    if(this->status != status){
+    if(this->status != status||status == NotActive){
         this->status = status;
         emit status_changed(status);
     }
@@ -547,6 +561,10 @@ Client::Status Client::getStatus() const{
 
 void Client::jilei(const QString &jilei_str){
     Self->jilei(jilei_str);
+}
+
+void Client::cardLock(const QString &card_str){
+    Self->setCardLocked(card_str);
 }
 
 void Client::judgeResult(const QString &result_str){
@@ -764,7 +782,7 @@ void Client::askForNullification(const QString &ask_str){
         source = getPlayer(source_name);
 
     if(Config.NeverNullifyMyTrick && source == Self){
-        if(trick_card->inherits("SingleTargetTrick")){
+        if(trick_card->inherits("SingleTargetTrick") || trick_card->objectName() == "iron_chain"){
             responseCard(NULL);
             return;
         }
@@ -972,6 +990,26 @@ void Client::setPileNumber(const QString &pile_str){
     updatePileNum();
 }
 
+void Client::setStatistics(const QString &property_str){
+    QRegExp rx("(\\w+):(\\w+)");
+    if(!rx.exactMatch(property_str))
+        return;
+
+    QStringList texts = rx.capturedTexts();
+    QString property_name = texts.at(1);
+    QString value_str = texts.at(2);
+
+    StatisticsStruct *statistics = Self->getStatistics();
+    bool ok;
+    value_str.toInt(&ok);
+    if(ok)
+        statistics->setStatistics(property_name, value_str.toInt());
+    else
+        statistics->setStatistics(property_name, value_str);
+
+    Self->setStatistics(statistics);
+}
+
 void Client::updatePileNum(){
     QString pile_str = tr("Draw pile: <b>%1</b>, discard pile: <b>%2</b>, swap times: <b>%3</b>")
                        .arg(pile_num).arg(discarded_list.length()).arg(swap_pile);
@@ -1073,6 +1111,12 @@ void Client::killPlayer(const QString &player_name){
                 last_word = Sanguosha->translate(("~") +  origin_generals.at(1));
         }
 
+        if(last_word.startsWith("~") && general_name.endsWith("f")){
+            QString origin_general = general_name;
+            origin_general.chop(1);
+            if(Sanguosha->getGeneral(origin_general))
+                last_word = Sanguosha->translate(("~") + origin_general);
+        }
         skill_title = tr("%1[dead]").arg(Sanguosha->translate(general_name));
         skill_line = last_word;
 
@@ -1192,6 +1236,10 @@ void Client::setMark(const QString &mark_str){
     player->setMark(mark, value);
 }
 
+void Client::doFilter(const QString &){
+    emit do_filter();
+}
+
 void Client::chooseSuit(){
     request("chooseSuit " + sender()->objectName());
 
@@ -1245,6 +1293,10 @@ void Client::takeAG(const QString &take_str){
 
 void Client::clearAG(const QString &){
     emit ag_cleared();
+}
+
+void Client::disableAG(const QString &disable_str){
+    emit ag_disabled(disable_str == "true");
 }
 
 void Client::askForSinglePeach(const QString &ask_str){

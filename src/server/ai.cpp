@@ -168,7 +168,7 @@ QList<ServerPlayer *> AI::getFriends() const{
     return friends;
 }
 
-void AI::filterEvent(TriggerEvent event, ServerPlayer *player, const QVariant &data){
+void AI::filterEvent(TriggerEvent , ServerPlayer *, const QVariant &){
     // dummy
 }
 
@@ -220,7 +220,7 @@ bool TrustAI::useCard(const Card *card){
         return false;
 }
 
-Card::Suit TrustAI::askForSuit(){
+Card::Suit TrustAI::askForSuit(const QString &){
     return Card::AllSuits[qrand() % 4];
 }
 
@@ -237,7 +237,7 @@ QString TrustAI::askForKingdom(){
     return role;
 }
 
-bool TrustAI::askForSkillInvoke(const QString &skill_name, const QVariant &data){
+bool TrustAI::askForSkillInvoke(const QString &, const QVariant &){
     return false;
 }
 
@@ -251,7 +251,7 @@ QString TrustAI::askForChoice(const QString &skill_name, const QString &choice){
     }
 }
 
-QList<int> TrustAI::askForDiscard(const QString &reason, int discard_num, bool optional, bool include_equip){
+QList<int> TrustAI::askForDiscard(const QString &, int discard_num, bool optional, bool include_equip){
     QList<int> to_discard;
 
     if(optional)
@@ -292,6 +292,9 @@ int TrustAI::askForCardChosen(ServerPlayer *who, const QString &flags, const QSt
 }
 
 const Card *TrustAI::askForCard(const QString &pattern, const QString &prompt, const QVariant &data){
+    Q_UNUSED(prompt);
+    Q_UNUSED(data);
+
     response_skill->setPattern(pattern);
     QList<const Card *> cards = self->getHandcards();
     foreach(const Card *card, cards){
@@ -337,6 +340,8 @@ const Card *TrustAI::askForPindian(ServerPlayer *requestor, const QString &reaso
 }
 
 ServerPlayer *TrustAI::askForPlayerChosen(const QList<ServerPlayer *> &targets, const QString &reason){
+    Q_UNUSED(reason);
+
     int r = qrand() % targets.length();
     return targets.at(r);
 }
@@ -414,7 +419,7 @@ QString LuaAI::askForUseCard(const QString &pattern, const QString &prompt){
 
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
 
-    lua_pushstring(L, __func__);
+    lua_pushstring(L, __FUNCTION__);
 
     lua_pushstring(L, pattern.toAscii());
 
@@ -436,7 +441,7 @@ QString LuaAI::askForUseCard(const QString &pattern, const QString &prompt){
 QList<int> LuaAI::askForDiscard(const QString &reason, int discard_num, bool optional, bool include_equip){
     lua_State *L = room->getLuaState();
 
-    pushCallback(L, __func__);
+    pushCallback(L, __FUNCTION__);
     lua_pushstring(L, reason.toAscii());
     lua_pushinteger(L, discard_num);
     lua_pushboolean(L, optional);
@@ -478,7 +483,7 @@ QString LuaAI::askForChoice(const QString &skill_name, const QString &choices){
 
     lua_State *L = room->getLuaState();
 
-    pushCallback(L, __func__);
+    pushCallback(L, __FUNCTION__);
     lua_pushstring(L, skill_name.toAscii());
     lua_pushstring(L, choices.toAscii());
 
@@ -496,7 +501,7 @@ QString LuaAI::askForChoice(const QString &skill_name, const QString &choices){
 int LuaAI::askForAG(const QList<int> &card_ids, bool refusable, const QString &reason){
     lua_State *L = room->getLuaState();
 
-    pushCallback(L, __func__);
+    pushCallback(L, __FUNCTION__);
     pushQIntList(L, card_ids);
     lua_pushboolean(L, refusable);
     lua_pushstring(L, reason.toAscii());
@@ -539,7 +544,7 @@ void LuaAI::reportError(lua_State *L){
 void LuaAI::askForGuanxing(const QList<int> &cards, QList<int> &up, QList<int> &bottom, bool up_only){
     lua_State *L = room->getLuaState();
 
-    pushCallback(L, __func__);
+    pushCallback(L, __FUNCTION__);
     pushQIntList(L, cards);
     lua_pushboolean(L, up_only);
 

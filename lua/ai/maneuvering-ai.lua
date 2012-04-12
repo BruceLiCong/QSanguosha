@@ -22,8 +22,53 @@ sgs.weapon_range.Fan = 4
 sgs.ai_use_priority.Fan = 2.655
 sgs.ai_use_priority.Vine = 0.6
 
-sgs.ai_skill_invoke.fan = function(self, data)
-	return not self:isFriend(data:toSlashEffect().to)
+sgs.ai_view_as.fan = function(card, player, card_place)
+	local suit = card:getSuitString()
+	local number = card:getNumberString()
+	local card_id = card:getEffectiveId()
+	if card:inherits("Slash") and not (card:inherits("FireSlash") or card:inherits("ThunderSlash")) then
+		return ("fire_slash:fan[%s:%s]=%d"):format(suit, number, card_id)
+	end
+end
+
+local fan_skill={}
+fan_skill.name="fan"
+table.insert(sgs.ai_skills,fan_skill)
+fan_skill.getTurnUseCard=function(self)
+	local cards = self.player:getCards("h")	
+	cards=sgs.QList2Table(cards)
+	local slash_card
+	
+	for _,card in ipairs(cards)  do
+		if card:inherits("Slash") and not (card:inherits("FireSlash") or card:inherits("ThunderSlash")) then
+			slash_card = card
+			break
+		end
+	end
+	
+	if not slash_card  then return nil end
+	local suit = slash_card:getSuitString()
+	local number = slash_card:getNumberString()
+	local card_id = slash_card:getEffectiveId()
+	local card_str = ("fire_slash:fan[%s:%s]=%d"):format(suit, number, card_id)
+	local fireslash = sgs.Card_Parse(card_str)
+	assert(fireslash)
+	
+	return fireslash
+		
+end
+
+function sgs.ai_weapon_value.fan(self, enemy)
+	if enemy and (self:isEquip("Vine", enemy) or self:isEquip("GaleShell", enemy)) then return 3 end
+end
+
+function sgs.ai_armor_value.vine(player, self)
+	for _, enemy in ipairs(self:getEnemies(player)) do
+		if (enemy:canSlash(player) and self:isEquip("Fan",enemy)) or self:hasSkills("huoji|shaoying", enemy) then return -1 end
+		if enemy:objectName() == self.player:objectName() and (self:getCardId("FireSlash", enemy) or self:getCardId("FireAttack",enemy)) then return -1 end
+	end
+	if #(self:getEnemies(player))<3 then return 4 end
+	return 3
 end
 
 function SmartAI:searchForAnaleptic(use,enemy,slash)
@@ -81,7 +126,7 @@ function SmartAI:searchForAnaleptic(use,enemy,slash)
 
 	local card_str = self:getCardId("Analeptic")
 	if card_str then return sgs.Card_Parse(card_str) end
-
+        
 	for _, anal in ipairs(cards) do
 		if (anal:className() == "Analeptic") and not (anal:getEffectiveId() == slash:getEffectiveId()) and
 			not isCompulsoryView(anal, "Slash", self.player, sgs.Player_Hand) then
@@ -105,11 +150,10 @@ end
 
 function SmartAI:useCardSupplyShortage(card, use)
 	table.sort(self.enemies, handcard_subtract_hp)
-
 	local enemies = self:exclude(self.enemies, card)
 	for _, enemy in ipairs(enemies) do
 		if (self:hasSkills("yongsi|haoshi|tuxi", enemy) or (enemy:hasSkill("zaiqi") and enemy:getLostHp() > 1)) and
-			not enemy:containsTrick("supply_shortage") and enemy:faceUp() then
+			not enemy:containsTrick("supply_shortage") and enemy:faceUp() and self:objectiveLevel(enemy) > 3 then
 			use.card = card
 			if use.to then use.to:append(enemy) end
 
@@ -117,7 +161,7 @@ function SmartAI:useCardSupplyShortage(card, use)
 		end
 	end
 	for _, enemy in ipairs(enemies) do
-		if ((#enemies == 1) or not enemy:hasSkill("tiandu")) and not enemy:containsTrick("supply_shortage") and enemy:faceUp() then
+		if ((#enemies == 1) or not self:hasSkills("tiandu|guidao",enemy)) and not enemy:containsTrick("supply_shortage") and enemy:faceUp() and self:objectiveLevel(enemy) > 3 then
 			use.card = card
 			if use.to then use.to:append(enemy) end
 
@@ -152,32 +196,104 @@ function SmartAI:getChainedEnemies()
 	return chainedEnemies
 end
 
-function SmartAI:useCardIronChain(card, use)
-	use.card = card
-	if #self.enemies == 1 and #(self:getChainedFriends()) <= 1 then return end
-	local targets = {}
-	self:sort(self.friends,"defense")
-	for _, friend in ipairs(self.friends) do
-		if friend:isChained() then
-			table.insert(targets, friend)
+function SmartAI:isGoodChainPartner(player)  
+    player = player or self.player
+	if player:getRole() == "lord" then
+		return false
+	end
+	if player:hasSkill("buqu") or (self:hasSkills("yiji|jieming|guixin",player) and player:getHp() > 1) or
+		(self.player:hasSkill("niepan") and self.player:getMark("@@nirvana") > 0) or 
+			player:hasSkill("fuli") and player:getMark("@laoji") > 0 then  
+		return true
+	end
+	return false
+end
+
+function SmartAI:isGoodChainTarget(who)    
+    local haslord                                                           
+	local good = #(self:getChainedEnemies(self.player))
+	local bad = #(self:getChainedFriends(self.player))
+	for _, friend in ipairs(self:getChainedFriends(self.player)) do
+	    if friend:getRole() == "lord" then
+			return false
+		end
+		if friend:objectName() == self.player:objectName() and not self:isGoodChainPartner(self.player) then
+			return false
+		end
+		if self:cantbeHurt(friend) then
+			return false
+		end
+		if self:isGoodChainPartner(friend) then 
+			good = good+1 
+		end
+		if self:isWeak(friend) and not friend:hasSkill("buqu") then 
+			good = good-1 
 		end
 	end
+	for _, enemy in ipairs(self:getChainedEnemies(self.player)) do
+		if enemy:getHp() < 3 and not enemy:hasSkill("buqu") and enemy:getRole() == "lord" and self.player:getRole() == "renegade" then
+			return false
+		end
+		if self:cantbeHurt(enemy) then
+			return false
+		end
+		if self:isGoodChainPartner(enemy) then 
+			bad = bad+1 
+		end
+		if self:isWeak(enemy) and not enemy:hasSkill("buqu") then 
+			bad = bad-1 
+		end
+	end
+	return good > bad
+end
 
+
+function SmartAI:useCardIronChain(card, use)    
+	use.card = card
+	if #self.enemies == 1 and #(self:getChainedFriends()) <= 1 then return end
+	if self:needBear() then return end
+	local friendtargets = {}
+	local enemytargets = {}
+	local yangxiu = self.room:findPlayerBySkillName("danlao")
+	self:sort(self.friends,"defense")
+	for _, friend in ipairs(self.friends) do
+		if friend:isChained() and not self:isGoodChainPartner(friend) and self:hasTrickEffective(card, friend) and not friend:hasSkill("danlao") then
+			table.insert(friendtargets, friend)
+		end
+	end
 	self:sort(self.enemies,"defense")
 	for _, enemy in ipairs(self.enemies) do
 		if not enemy:isChained() and not self.room:isProhibited(self.player, enemy, card) and not enemy:hasSkill("danlao")
 			and self:hasTrickEffective(card, enemy) and not (self:objectiveLevel(enemy) <= 3) then
-			table.insert(targets, enemy)
+			table.insert(enemytargets, enemy)
 		end
 	end
-
-	if targets[2] and not self.player:hasSkill("wuyan") then
-		if use.to then use.to:append(targets[1]) end
-		if use.to then use.to:append(targets[2]) end
+	if not self.player:hasSkill("wuyan") then
+		if #friendtargets > 1 then
+			if use.to then use.to:append(friendtargets[1]) end
+			if use.to then use.to:append(friendtargets[2]) end
+		elseif #friendtargets == 1 then
+		    if #enemytargets > 0 then
+				if use.to then use.to:append(friendtargets[1]) end
+				if use.to then use.to:append(enemytargets[1]) end
+			elseif yangxiu and self:isFriend(yangxiu) then
+				if use.to then use.to:append(friendtargets[1]) end
+				if use.to then use.to:append(yangxiu) end
+			end
+		elseif #enemytargets > 1 then
+			if use.to then use.to:append(enemytargets[1]) end
+			if use.to then use.to:append(enemytargets[2]) end
+		elseif #friendtargets == 1 then
+			if yangxiu and self:isFriend(yangxiu) then
+				if use.to then use.to:append(enemytargets[1]) end
+				if use.to then use.to:append(yangxiu) end
+			end
+		end
 	end
+	if use.to then assert(use.to:length() < 3) end
 end
 
-sgs.ai_card_intention.IronChain=function(card,from,tos,source)
+sgs.ai_card_intention.IronChain=function(card,from,tos)
 	for _, to in ipairs(tos) do
 		if to:isChained() then
 			sgs.updateIntention(from, to, 80)
@@ -192,7 +308,7 @@ sgs.ai_use_priority.IronChain = 2.8
 
 sgs.dynamic_value.benefit.IronChain = true
 
-function SmartAI:useCardFireAttack(fire_attack, use)
+function SmartAI:useCardFireAttack(fire_attack, use)  
 	if self.player:hasSkill("wuyan") then return end
 	local lack = {
 		spade = true,
@@ -216,7 +332,10 @@ function SmartAI:useCardFireAttack(fire_attack, use)
 
 	self:sort(self.enemies, "defense")
 	for _, enemy in ipairs(self.enemies) do
-		if (self:objectiveLevel(enemy) > 3) and not enemy:isKongcheng() and self:hasTrickEffective(fire_attack, enemy) then
+		if (self:objectiveLevel(enemy) > 3) and not enemy:isKongcheng() and not self.room:isProhibited(self.player, enemy, fire_attack)  
+			and self:damageIsEffective(enemy, sgs.DamageStruct_Fire, self.player) and self:hasTrickEffective(fire_attack, enemy)
+			and not self:cantbeHurt(enemy)
+			and not (enemy:isChained() and not self:isGoodChainTarget(enemy)) then
 
 			local cards = enemy:getHandcards()
 			local success = true
@@ -227,13 +346,13 @@ function SmartAI:useCardFireAttack(fire_attack, use)
 				end
 			end
 
-			if success then
-				if self:isEquip("Vine", enemy) then
+			if success  then
+				if self:isEquip("Vine", enemy) or enemy:getMark("@kuangfeng") > 0 or (enemy:isChained() and self:isGoodChainTarget(enemy)) then
 					table.insert(targets_succ, 1, enemy)
 					break
 				else
 					table.insert(targets_succ, enemy)
-				end
+			end
 			else
 				table.insert(targets_fail, enemy)
 			end
@@ -243,6 +362,9 @@ function SmartAI:useCardFireAttack(fire_attack, use)
 	if #targets_succ > 0 then
 		use.card = fire_attack
 		if use.to then use.to:append(targets_succ[1]) end
+	elseif self.player:isChained() and self:isGoodChainTarget(self.player) and self:isGoodChainPartner(self.player) and self.player:getHandcardNum() > 1 then
+		use.card = fire_attack
+		if use.to then use.to:append(self.player) end
 	elseif #targets_fail > 0 and self:getOverflow(self.player) > 0 then
 		use.card = fire_attack
 		local r = math.random(1, #targets_fail)

@@ -52,5 +52,12 @@ return{
 	["designer:guisimahui"] = "杀神附体小组",
 	["designer:shamoke"] = "杀神附体小组",
 	["designer:guizhuge"] = "杀神附体小组",
-		
+	
+	["illustrator:guiguanyu"] = "程序：若虚无",
+	["illustrator:guizhangfei"] = "程序：若虚无",
+	["illustrator:guilvbu"] = "程序：若虚无",
+	["illustrator:guihuaxiong"] = "程序：若虚无",
+	["illustrator:guisimahui"] = "程序：若虚无",
+	["illustrator:shamoke"] = "程序：若虚无",	
+	["illustrator:guizhuge"] = "程序：若虚无",	
 }

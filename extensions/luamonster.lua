@@ -56,16 +56,20 @@ yaohou=sgs.CreateTriggerSkill{
 		local bianshi = room:findPlayerBySkillName(self:objectName())
 	
 		if damage.from:isLord() and damage.from:getGeneral():isMale() then
-			if (room:askForSkillInvoke(bianshi,self:objectName()) and not damage.to:isNude() ) then 
-				local card_id = room:askForCardChosen(bianshi, damage.to, "he", "yaohou")
-				if(room:getCardPlace(card_id) == sgs.Player_Hand) then
-					room:moveCardTo(sgs.Sanguosha:getCard(card_id), bianshi, sgs.Player_Hand, false)
-				else
-					room:obtainCard(bianshi, card_id)
+			if (room:askForSkillInvoke(bianshi,self:objectName())) then
+				local choice = room:askForChoice(bianshi, "yaohou", "get+draw");
+        		if(choice == "get" or damage.to:isNude())then
+            		room:playSkillEffect("yaohou", 1)
+					local card_id = room:askForCardChosen(bianshi, damage.to, "he", "yaohou")
+					if(room:getCardPlace(card_id) == sgs.Player_Hand) then
+						room:moveCardTo(sgs.Sanguosha:getCard(card_id), bianshi, sgs.Player_Hand, false)
+					else
+						room:obtainCard(bianshi, card_id)
+					end
+                else
+					room:playSkillEffect("yaohou", 2)
+					bianshi:drawCards(1)
 				end
-			room:playSkillEffect("yaohou")
-			else
-				bianshi:drawCards(1)
 			end
 		end
 	end,
@@ -177,6 +181,8 @@ sgs.LoadTranslationTable{
 	[":dianmu"] = "锁定技，你造成的所有伤害均视为雷电伤害。",
 	["yaohou"] = "妖后",
 	[":yaohou"] = "皇后技，若主公为男性角色，主公对任意一名角色造成一次伤害，你可以选择执行下列两项中的一项;1.你立即从该角色出获得一张牌；2.立即摸一张牌。",
+	["yaohou:get"] = "从该角色处获得一张牌",
+	["yaohou:draw"] = "摸一张牌",
 	["taiping"] = "太平",
 	[":taiping"] = "出牌阶段，你可以将任意两张♠手牌当【南蛮入侵】使用，用人一两张♥手牌当【万箭齐发】使用，任意两张♣手牌当【五谷丰登】使用，任意两张♦手牌当【桃园结义】使用。每回合限一次。",
 	["jiazi"] = "甲子",

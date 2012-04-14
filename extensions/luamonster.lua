@@ -2,7 +2,7 @@ module("extensions.luamonster", package.seeall)
 extension = sgs.Package("monster")            
 
 bianshi = sgs.General(extension, "bianshi", "wei", "3", false)
-yaozhangjiao = sgs.General(extension, "yaozhangjiao", "qun", "3")
+yaozhangjiao = sgs.General(extension, "yaozhangjiao$", "qun", "3")
 yaoxiaoqiao = sgs.General(extension, "yaoxiaoqiao", "wu", "3", false)    
 
 jiahuo = sgs.CreateViewAsSkill{ 
@@ -134,7 +134,9 @@ jiazi=sgs.CreateTriggerSkill{
 }
 
 tuzhong=sgs.CreateTriggerSkill{
-	name="tuzhong",
+	name="tuzhong$",
+	default_choice = "ignore",
+
 	events=sgs.PhaseChange,
 	frequency=sgs.Skill_NotFrequent,
 	on_trigger=function(self,event,player,data)
@@ -171,7 +173,108 @@ tongque=sgs.CreateTriggerSkill{
 		SkillLog(player,self:objectName(),0,0)
 		SkillLog(player,self:objectName(),1,0)
 		return true--卡片无效
+	end,
+}
+
+quwu_card=sgs.CreateSkillCard{
+
+name="quwu_effect",
+once=true,
+target_fixed=false,
+
+will_throw=false,
+
+filter=function(self,targets,to_select)
+	return player:inMyAttackRange(self) --否则要在攻击范围内
+end,
+
+on_effect=function(self,effect)
+	room = effect.to:getRoom()
+	room:setPlayerFlag(effect.from, "quwu_flag")
+	room:setPlayerFlag(effect.to, "quwu_target")
+end,
+
+}
+
+quwu_viewAsSkill=sgs.CreateViewAsSkill{
+
+name="quwu_viewAs",
+
+n=0,
+view_as=function(self, cards)
+	if #cards==0 then --ZEROCARDVIEW
+		local acard=quwu_card:clone()         
+		acard:setSkillName(self:objectName())     
+		return acard
 	end
+end,
+	
+--view_filter=function(self, selected, to_select)
+--	return true
+--end,
+
+
+enabled_at_play=function()
+	return true---sgs.Self:hasFlag("quwu_canuse")  
+end,
+}
+quwu=sgs.CreateTriggerSkill{
+
+	name="quwu",
+
+	view_as_skill=quwu_viewAs,
+	frequency = sgs.Skill_NotFrequent,
+
+	events=sgs.PhaseChange,
+
+	can_trigger = function()
+		return true
+	end,
+
+	on_trigger=function(self,event,player,data)
+		local room=player:getRoom()
+		local yaoxiaoqiao = room:findPlayerBySkillName(self:objectName())
+	
+		if player == yaoxiaoqiao and player:getPhase() == sgs.Player_Draw and player:hasFlag("quwu_flag") then             
+			player:drawCards(1)
+			room:setPlayerFlag(player, "-quwu_flag")    
+			return true
+		elseif player:getPhase() == sgs.Player_Draw and player:hasFlag("quwu_target") then
+			yaoxiaoqiao:drawCards(1)
+			room:setPlayerFlag(player, "-quwu_target") 
+			return false
+		elseif player == yaoxiaoqiao and player:getPhase() == sgs.Player_Play then
+			room:setPlayerMark(player, "quwu_canuse")
+		elseif player == yaoxiaoqiao and player:getPhase() == sgs.Player_Finish then
+			room:setPlayerFlag(player, "-quwu_canuse")  --回合结束 让VIEWAS禁用
+		end
+	end,
+}
+
+zhongshang=sgs.CreateTriggerSkill{
+	name="zhongshang",
+	events={sgs.PhaseChange, sgs.Death},
+	frequency=sgs.Skill_Compulsory,
+	can_trigger = function()
+		return true
+	end,
+	on_trigger=function(self,event,player,data)
+		local room = player:getRoom()
+		if(event == sgs.Death) then
+			local yaoxiaoqiao = room:findPlayerBySkillName(self:objectName())
+			yaoxiaoqiao:gainMark("@zhongshang", 1)
+			return false
+		elseif player:getPhase() == sgs.Player_Discard and player:hasSkill(self:objectName()) then
+			if player:getHandcardNum() > (player:getHp() + player:getMark("@zhongshang")) then
+				local num = player:getHandcardNum() - (player:getHp() + player:getMark("@zhongshang"))
+				player:getRoom():askForDiscard(player, self:objectName(), num)
+				return true
+			else
+				return true
+			end
+		end
+	
+	end,
 }
 
 sgs.LoadTranslationTable{
@@ -208,3 +311,5 @@ yaozhangjiao:addSkill(jiazi)
 yaozhangjiao:addSkill(tuzhong)
 
 yaoxiaoqiao:addSkill(tongque)
+yaoxiaoqiao:addSkill(quwu)
+yaoxiaoqiao:addSkill(zhongshang)

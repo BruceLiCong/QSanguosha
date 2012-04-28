@@ -18,13 +18,24 @@ jiahuo = sgs.CreateViewAsSkill{
 			local new_card =sgs.Sanguosha:cloneCard("collateral", card:getSuit(), card:getNumber())
 			new_card:addSubcard(card:getId())
 			new_card:setSkillName(self:objectName())
-			sgs.Self:setFlags("jhused")
 			return new_card
 		end
 	end,
 	enabled_at_play=function()
 		 if  sgs.Self:getPhase()==sgs.Player_Finish then sgs.Self:getRoom():setPlayerFlag(sgs.Self,"-jhused") end 
 		 return not sgs.Self:hasFlag("jhused")        --出牌时可以使用
+	end
+}
+
+jiahuoTR=sgs.CreateTriggerSkill{
+	name="#jiahuoTR",
+	events=sgs.CardUsed,--出牌的时候
+	on_trigger=function(self,event,player,data)
+		local room=player:getRoom()
+		local card=data:toCardUse().card
+		if card:getSkillName()=="jiahuo" then
+		player:drawCards(1)
+		room:setPlayerFlag(player, "jhused") return false end
 	end
 }
 

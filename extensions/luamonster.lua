@@ -1,5 +1,5 @@
 module("extensions.luamonster", package.seeall)  
-extension = sgs.Package("monster")            
+extension = sgs.Package("luamonster")            
 
 bianshi = sgs.General(extension, "bianshi", "wei", "3", false)
 yaozhangjiao = sgs.General(extension, "yaozhangjiao$", "qun", "3")
@@ -289,6 +289,10 @@ zhongshang=sgs.CreateTriggerSkill{
 }
 
 sgs.LoadTranslationTable{
+	["luamonster"] = "妖包",
+	["bianshi"] = "卞氏",
+	["yaoxiaoqiao"] = "妖小乔",
+	["yaozhangjiao"] = "妖张角",
 	["jiahuo"] = "嫁祸",
 	[":jiahuo"] = "出牌阶段，你可以将任意一张♣或♠牌当【借刀杀人】使用，每回合限一次。",
 	["dianmu"] = "电母",

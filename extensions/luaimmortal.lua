@@ -549,7 +549,7 @@ luabenxi = sgs.CreateTriggerSkill{
   }
 luaxzh:addSkill(luabenxi)  
 sgs.LoadTranslationTable{
-    ["luaxzh"] = "仙张颌",
+    ["luaxzh"] = "张颌",
 	["luabenxi"] = "奔袭",
 	[":luabenxi"] = "你可以选择跳过摸牌阶段，并观看一次任意一名角色的手牌，若如此做该回合的出牌阶段，你使用【杀】无视距离且造成的伤害+1。",
 	["@luabenxi"] = "你可以选择任意一名玩家，观看其手牌。",

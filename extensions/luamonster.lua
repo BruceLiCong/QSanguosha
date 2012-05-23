@@ -3,7 +3,7 @@ extension = sgs.Package("luamonster")
 
 bianshi = sgs.General(extension, "bianshi", "wei", "3", false)
 yaozhangjiao = sgs.General(extension, "yaozhangjiao$", "qun", "3")
-yaoxiaoqiao = sgs.General(extension, "yaoxiaoqiao", "wu", "3", false)    
+--yaoxiaoqiao = sgs.General(extension, "yaoxiaoqiao", "wu", "3", false)    
 
 jiahuo = sgs.CreateViewAsSkill{ 
 	name = "jiahuo",
@@ -291,8 +291,11 @@ zhongshang=sgs.CreateTriggerSkill{
 sgs.LoadTranslationTable{
 	["luamonster"] = "妖包",
 	["bianshi"] = "卞氏",
+	["#bianshi"] = "黄巾女将",
 	["yaoxiaoqiao"] = "妖小乔",
+	["#yaoxiaoqiao"] = "铜雀冢殇",
 	["yaozhangjiao"] = "妖张角",
+	["#yaozhangjiao"] = "天贤灵师",
 	["jiahuo"] = "嫁祸",
 	[":jiahuo"] = "出牌阶段，你可以将任意一张♣或♠牌当【借刀杀人】使用，每回合限一次。",
 	["dianmu"] = "电母",
@@ -325,6 +328,6 @@ yaozhangjiao:addSkill(taiping)
 yaozhangjiao:addSkill(jiazi)
 yaozhangjiao:addSkill(tuzhong)
 
-yaoxiaoqiao:addSkill(tongque)
-yaoxiaoqiao:addSkill(quwu)
-yaoxiaoqiao:addSkill(zhongshang)
+--yaoxiaoqiao:addSkill(tongque)
+--yaoxiaoqiao:addSkill(quwu)
+--yaoxiaoqiao:addSkill(zhongshang)

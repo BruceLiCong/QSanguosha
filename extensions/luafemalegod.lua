@@ -11,7 +11,7 @@ name="luagongshen",
 n=1,
 
 view_filter=function(self,selected,to_select)
-return to_select:inherits("Weapon")
+return to_select:inherits("EquipCard")
 end,
 
 view_as=function(self, cards)
